@@ -714,6 +714,8 @@ Defaults to 5000
 
 
 
+
+
 ################################################GIT and GITHUB###############################################
 
 
@@ -736,6 +738,123 @@ git commit -m "First commit"
 
 
 commit is a snapshot of our project it will save the version of that code wwhen we give commit.
+
+
+git ls-files --
+
+It will return the list of files which are tracking by git.
+
+git status - It will show which files are in staged, and untracked and modified.
+
+git log - it will show the log of git commits
+
+git diff - It will show the difference in staged files if we changed anything.
+
+
+###Git setup and connet
+
+Repository name:Tagged pdf
+
+then github creates
+https://github.com/ajaykumar-ajk/Taggedpdf.git
+
+go to your project folder in system
+
+cd ~/Downloads/projects/Taggedpdf/articlexml_creation
+
+
+Intialize git
+
+git init
+
+configure your identity in git config
+
+git config --global user.name "Ajay"
+git config --global user.email ""
+
+Because need to know who are changig commits in git if any another one is changing commits we may dont know.
+
+To verify the list is updated or not
+
+git config --global --list
+
+
+when we committing
+
+git commit -m "message need to type why we are going to commit"
+
+
+
+#####Now connecting to github from git
+
+git remote add origin https://github.com/ajaykumar-ajk/Taggedpdf.git
+
+here origin is a nickname for that github path instead of every time calling with that path
+
+verify the remote path::
+git remove -v
+
+pushing to github::
+
+git branch -m Main
+git push -u origin main
+
+#To check the branch ::
+
+git branch
+
+
+
+before pushing to gihub git will verify your identity
+
+1.Personal Access Token
+
+
+####pushing code from git to github
+
+ssh -T git@github.com - Tests whether your ssh key can authenticate with github or not.
+
+
+git remote -v - it shows the repository to which git is connected to github.
+
+git remote set-url origin git@github.com:ajaykumar-ajk/python_notes.git
+
+
+to verify path ::
+
+git remote -v
+
+########
+
+eval "$(ssh-agent -s)"
+
+ssh agent  is a background process that stores our ssh key in memory
+
+Without an SSH agent:
+
+Git asks for your private key every time it needs authentication.
+You may need to enter your passphrase repeatedly.
+
+
+ssh-add ~/.ssh/id_ed25519   Loads your private SSH key into the SSH agent.
+
+
+git push -u origin Main ----------------Pushes using SSH and sets upstream tracking
+
+It will push the files from our local Main branch to that remote -v url
+we can push in two ways in starting
+
+1.git push -u origin Main
+2. git push origin Main
+
+-u remembers from what branch to origin so whenever you are doing from second time you can do git push. 
+
+
+
+#to create branch 
+
+git create branch
+
 
 
 
