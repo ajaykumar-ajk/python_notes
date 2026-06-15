@@ -856,9 +856,43 @@ we can push in two ways in starting
 git create branch
 
 
+####Git clone -- Downloads a remote repository from github and creates a local copy.
+
+git clone git@github.com:ajaykumar-ajk/python_notes.git
+
+###Git fetch
+
+Downloads latest changes without changing files.
 
 
+##Git pull
 
+If I want to update the code in git from github then we will use 
+
+git pull origin Main
+
+this one when we need to use means when the local branch is already tracking the remote branch 
+
+In starting we are giving the git push -u origin Main
+
+at that time it will establish the relationship between Main local branch to git repository so after that whenever you are pushing and pulling you can use git push and git pull
+
+### To check whether that local branch is in tracking with remote repository in github or not means
+
+git branch -vv
+
+
+###############################################OLLAMA#########################################################
+
+
+To list the models
+
+ollama list
+
+
+TO run the models 
+
+ollama run model_name
 
 #############################################################################################################
 SUBSTRING CONCEPT IN PYTHON
