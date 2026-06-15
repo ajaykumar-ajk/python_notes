@@ -1,0 +1,3869 @@
+
+
+
+
+#########################################################POSTGRE SQL TUTORIAL######################################################################
+
+#difference between sql and postgre sql
+*SQL is a standard language for managing and manipulating databases, while PostgreSQL is a specific implementation of a relational database management system (RDBMS) that uses SQL as its query language. PostgreSQL is an open-source database system that offers advanced features, extensibility, and support for complex data types, while SQL is a language used to interact with databases in general.
+
+* features  of postgresql and not in sql
+1. Support for advanced data types: PostgreSQL supports a wide range of data types, including JSON, XML, arrays, and user-defined types, which allows for more flexible data modeling.
+sample example of json data type in postgresql
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    preferences JSONB
+);
+Insert into users(name,preferences) values('ajay','{"theme":"dark","notifications":true}');
+
+2. Extensibility: PostgreSQL allows users to create custom functions, operators, and data types, making it highly extensible and adaptable to specific use cases.
+example of creating custom function in postgresql
+CREATE OR REPLACE FUNCTION calculate_discount(price NUMERIC, discount_rate NUMERIC)
+RETURNS NUMERIC AS $$
+BEGIN
+    RETURN price - (price * discount_rate);
+END;
+$$ LANGUAGE plpgsql;
+
+3. Concurrency and performance: PostgreSQL uses Multi-Version Concurrency Control (MVCC) to handle concurrent transactions efficiently, allowing for high performance even under heavy workloads.
+
+what is MVCC?
+MVCC stands for Multi-Version Concurrency Control. It is a database management technique used to handle concurrent transactions in a way that allows multiple transactions to access the same data simultaneously without conflicts. MVCC works by creating multiple versions of data records, allowing transactions to read and write without blocking each other. When a transaction modifies a record, it creates a new version of that record, while other transactions can continue to access the previous version until they are ready to commit their changes. This approach helps improve performance and allows for better concurrency in database systems like PostgreSQL.
+
+example of mvcc using phonepe transactions
+Transaction 1: User A initiates a payment of $100 to User B.
+Transaction 2: User C initiates a payment of $50 to User D at the same time.
+In a traditional locking mechanism, Transaction 1 would lock the relevant records until it completes, causing Transaction 2 to wait. However, with MVCC, both transactions can proceed concurrently. When Transaction 1 modifies the records for User A and User B, it creates new versions of those records. Transaction 2 can read the previous versions of the records for User C and User D without waiting for Transaction 1 to finish. This allows both transactions to execute simultaneously without blocking each other, improving performance and user experience.
+
+
+my doubt is if transaction 2 user b send the amount user c then what will happen in that case?
+In the case where Transaction 2 (User C sending $50 to User D) occurs while Transaction 1 (User A sending $100 to User B) is still in progress, MVCC allows both transactions to proceed without blocking each other.
+When Transaction 1 modifies the records for User A and User B, it creates new versions of those records. Transaction 2 can read the previous versions of the records for User C and User D without waiting for Transaction 1 to finish. This means that Transaction 2 can successfully execute and update the records for User C and User D while Transaction 1 is still in progress. Once Transaction 1 completes and commits its changes, the new versions of the records for User A and User B will become visible to other transactions, including Transaction 2. This allows for concurrent execution of transactions without blocking, improving performance and user experience in the database system.
+
+
+
+
+4. Advanced indexing: PostgreSQL offers various indexing options, including B-tree, hash, and GIN indexes, which can improve query performance for different types of data and queries.
+example of creating index in postgresql
+CREATE INDEX idx_users_name ON users(name);
+
+what is special feature in sql also indexing is present
+Yes, indexing is a feature that is present in both SQL and PostgreSQL. Indexing is a database optimization technique that allows for faster retrieval of data by creating a data structure that improves the speed of data retrieval operations on a database table. Both SQL and PostgreSQL support various types of indexes, such as B-tree, hash, and GIN indexes, which can be used to enhance query performance based on the specific use case and data characteristics. However, PostgreSQL offers additional advanced indexing options and features compared to some other SQL databases, making it more versatile for handling complex queries and large datasets.
+
+what is b-tree index?
+A B-tree index is a type of data structure used in databases to improve the speed of data retrieval operations. It is a balanced tree structure that allows for efficient searching, insertion, and deletion of records. In a B-tree index, data is organized in a hierarchical manner, with each node containing multiple keys and pointers to child nodes. The keys in the B-tree index are sorted, which allows for fast searching by traversing the tree from the root to the leaf nodes. B-tree indexes are commonly used in databases like PostgreSQL to optimize query performance, especially for range queries and equality searches on indexed columns.
+example of creating a B-tree index in PostgreSQL:
+CREATE INDEX idx_users_email ON users USING btree (email);
+
+Binary tree indexing means  It is like binary search 
+It will work for numbers and text also because everything will be arrange in sorted order.
+
+
+
+what is hash index?
+
+it will work like a hash table where it will create a hash value for each record and it will store the hash value in the index. It is used for equality searches and it is not suitable for range queries. Hash indexes are generally faster than B-tree indexes for equality searches but they do not support range queries or sorting.
+
+
+what is GIN index?
+
+GIN is defined as Generalized Inverted Index. It is a type of index used in PostgreSQL to efficiently handle complex data types, such as arrays, JSON, and full-text search. GIN indexes are designed to support queries that involve searching for specific values within these complex data types. They work by creating an inverted index that maps the values in the indexed column to the rows that contain those values. This allows for fast retrieval of rows based on the presence of specific values within the indexed data. GIN indexes are particularly useful for improving performance when querying large datasets with complex data structures.
+
+
+
+Row 1 → python, ai
+Row 2 → sql, database
+Row 3 → python, postgres
+
+
+if you create generalized Inverted Index on the column that contains these values, it will create an index that maps each unique value to the rows that contain it. For example:
+
+Value    | Rows
+
+python   | 1, 3
+ai       | 1
+sql      | 2
+database | 2
+postgres | 3
+
+
+what is GIST index?
+
+GIST stands for Generalized Search Tree. It is a type of index used in PostgreSQL to support complex data types and queries, such as geometric data, full-text search, and custom data types. GIST indexes are designed to handle a wide range of query types and can be used for both equality and range queries. They work by creating a tree structure that allows for efficient searching and retrieval of data based on the indexed values. GIST indexes are particularly useful for improving performance when working with spatial data, full-text search, and other complex data types in PostgreSQL.
+
+example of creating a GIST index in PostgreSQL:
+
+id | location
+---|-------------------
+1  | (10, 20)
+2  | (15, 25)
+3  | (100, 200)
+Create GiST index
+CREATE INDEX idx_loc ON places USING GIST (location);
+Internally (simplified)
+Node 1 → covers (0–50, 0–50)
+Node 2 → covers (90–200, 150–250)
+
+
+Feature B-Tree  GIN GiST
+Exact match ✅   ❌   ❌
+Inside search   ❌   ✅   ❌
+Spatial/ranges  ❌   ❌   ✅
+Flexible    ❌   ❌   ✅
+
+
+
+These are the indexings available in postgresql and it is not available in sql. So that is the main difference between sql and postgresql.
+
+
+
+###for giving all permissions to tables
+
+GRANT ALL PRIVILEGES ON TABLE table_name TO user_name;
+
+###for altering table structure in postgresql
+
+ALTER TABLE aotm_autoscal_server_running_log 
+ALTER COLUMN asrs_toolinsid DROP NOT NULL; - It remove not null constraint
+
+
+To connect to postgresql db from terminal
+
+sudo -u postgres psql -d your_database_name
+
+-- Check what role your user has
+\du your_username
+
+It will show all users with their roles
+
+
+
+###############################################################################################################
+
+
+###########################################loading the config json file######################################
+script_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(script_dir, '..', 'config.json')
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+##############################################################################################################
+
+To check what is running in particular port number
+
+netstat -tulnp | grep portno
+
+
+
+###############################################################################################################
+
+
+
+
+
+
+#############for finding powers in python###################
+1.result = 2 ** 3  # 2 to the power of 3
+  print(result)    # 8
+
+2.result = pow(2, 3)  # same as 2 ** 3
+  print(result)       # 8
+
+######################################################API service####################################################################
+
+systemctl enable service_name.service -- it will enable the service automatically when system restarts.
+
+
+#####################################################################################################################################
+
+
+#########finding the number using power of 4################
+
+Problem no 342
+
+1.using time complexity of O(n)
+  by for loop
+
+2. Using Binary search with time complexity of O(logn)
+   
+3. Using Bitwise operators with time complexity O(1)
+   
+   using two conditions like 4 and 3
+    n&(n-1)=4 & 3 = 100 & 011 =0
+
+   and 2nd condititon is 
+
+   Binary: 01010101010101010101010101010101
+   Hex   : 0x55555555
+
+   if n&0x55555555!=0 is equal of 4
+   ex: 4=100&101 is not equal to 0
+
+   if n==1:
+            return True
+        else:
+            if n&(n-1)==0 and (n&0x55555555)!=0:
+                return True
+            else:
+                return False
+
+
+#######################################################################
+
+#############################File permissions using os###########################
+tree.write(str(page_file), encoding='utf-8', pretty_print=True)
+os.chmod(page_file, 0o777)
+#################################################################################
+
+
+
+####################Minimum and Maximum integer value in python#####
+x = float('-inf')  # starting minimum
+x = float('inf')   #starting maximum
+
+#########################################################
+
+#############################################################################################
+using flask after making api call for adding security we are only listing apis only that apis can hit an api
+
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+allowed_ips = set(["203.0.113.25", "198.51.100.10"])
+
+@app.before_request
+def limit_remote_addr():
+    if request.remote_addr not in allowed_ips:
+        abort(403)  # Forbidden
+
+@app.route("/ajay/")
+def my_api():
+    return "Hello, Secure API!"
+
+
+########################################################################################################
+
+
+##################################################################################################
+for converting character to ascii value:
+
+# Single character to ASCII
+letter = 'A'
+ascii_value = ord(letter)
+print(ascii_vnalue)   # 65
+
+
+converting ascii to character
+ascii_value = 65
+letter = chr(ascii_value)
+print(letter)  # 'A'
+
+##################################################################################################
+
+##########################linux commands##################################################
+
+1. tree folder_path
+
+It will give the structure of files and folders present in that folder path.
+
+Ex:
+tree my_project
+
+Output:
+
+my_project
+├── app.py
+├── requirements.txt
+├── config
+│   ├── dev.yaml
+│   └── prod.yaml
+└── src
+    ├── models.py
+    └── utils.py
+
+
+#########################################################SKILL SET##################################################
+1. Python (topics::: collections)
+2. Linux
+3. PostgreSQL + MySQL
+4. FastAPI (ADD THIS) AND Rest APIs
+5. System Design (basic)
+6. Docker
+7. AWS
+8. Machine Learning (core)
+9. Prompt Engineering (core)
+10. LLMs + RAG + Vector DBs (CRITICAL)(Need to know when to use finetuning and llm)
+11. Background jobs (Celery/Redis)
+12. Fine-tuning (last)
+13. GITHUB
+
+
+
+
+Assuming 3–4 hours/day on weekdays and 6–8 hours on weekends:
+
+DSA → 40%
+Backend/System Design → 30%
+AI Engineering → 20%
+Resume/Interview Prep → 10%
+Month 1: Strengthen Python Fundamentals + DSA Foundation
+Python
+
+Master:
+
+OOP Concepts
+SOLID Principles
+Decorators
+Generators
+Iterators
+Context Managers
+*args, **kwargs
+List/Dict Comprehensions
+Lambda, Map, Filter
+Exception Handling
+Logging
+
+Interview Questions:
+
+Difference between list and tuple
+Deep copy vs shallow copy
+Mutable vs immutable
+MRO
+Method overloading/overriding
+DSA
+
+Topics:
+
+Arrays
+Strings
+Hash Maps
+Sets
+Sliding Window
+Two Pointers
+
+Target:
+
+40–50 LeetCode problems
+
+Examples:
+
+Two Sum
+Group Anagrams
+Longest Substring Without Repeating Characters
+Valid Anagram
+AI
+
+Learn:
+
+What is LLM?
+Tokens
+Embeddings
+Prompt Engineering
+Context Window
+
+Build:
+
+Simple FastAPI app calling an LLM API.
+
+Month 2: Advanced Python + SQL
+Python
+
+Learn:
+
+Multithreading
+Multiprocessing
+Asyncio
+GIL
+Memory Management
+Garbage Collection
+
+Since you already work with FastAPI, understanding async deeply is important.
+
+SQL
+
+Topics:
+
+Joins
+Subqueries
+Window Functions
+Indexes
+Transactions
+ACID
+
+Practice:
+
+50+ SQL problems.
+
+DSA
+
+Topics:
+
+Stack
+Queue
+Linked List
+Binary Search
+
+Target:
+
+50 problems
+AI
+
+Learn:
+
+Structured Outputs
+Function Calling
+JSON Outputs
+Prompt Chaining
+
+Build:
+
+Resume Analyzer API
+
+Month 3: System Design + Redis
+Backend
+
+Learn:
+
+Caching
+Redis
+Rate Limiting
+Session Storage
+
+Study:
+
+Why cache?
+Cache invalidation
+Redis internals
+
+Use:
+
+Redis
+DSA
+
+Topics:
+
+Trees
+BST
+Heap
+Priority Queue
+
+Target:
+
+50 problems
+AI
+
+Learn:
+
+Vector Databases
+Embeddings Search
+
+Tools:
+
+Qdrant
+
+Build:
+
+Document Search Engine
+
+Month 4: System Design + AWS
+AWS
+
+Learn:
+
+EC2
+S3
+RDS
+IAM
+
+Deploy:
+
+FastAPI project on AWS.
+
+Use:
+
+AWS Documentation
+Docker
+
+Learn:
+
+Dockerfile
+Docker Compose
+Containers
+Volumes
+Networking
+
+Use:
+
+Docker Docs
+DSA
+
+Topics:
+
+Graphs
+BFS
+DFS
+
+Target:
+
+40 problems
+AI
+
+Learn:
+
+RAG Architecture
+
+Flow:
+
+PDF
+ ↓
+Chunking
+ ↓
+Embedding
+ ↓
+Vector DB
+ ↓
+LLM
+ ↓
+Answer
+
+Build:
+
+PDF Chatbot
+
+Month 5: Kafka + Advanced Design
+Backend
+
+Learn:
+
+Message Queues
+Event Driven Architecture
+
+Tools:
+
+Apache Kafka
+RabbitMQ
+
+Topics:
+
+Producers
+Consumers
+Partitions
+Consumer Groups
+System Design
+
+Design:
+
+URL Shortener
+WhatsApp
+Notification Service
+File Processing Pipeline
+
+Since your current work involves OCR and XML processing, design document-processing systems too.
+
+DSA
+
+Topics:
+
+Recursion
+Backtracking
+Dynamic Programming Basics
+
+Target:
+
+40 problems
+AI
+
+Learn:
+
+AI Agents
+Tool Calling
+Multi-step Workflows
+
+Tools:
+
+LangChain
+LlamaIndex
+
+Build:
+
+Multi-document AI Assistant
+
+Month 6: Interview Preparation
+DSA
+
+Revision
+
+Solve:
+
+Top 150 Interview Problems
+Blind 75
+NeetCode 150
+
+Target:
+
+250–300 total problems completed
+Backend
+
+Mock Interviews
+
+Questions:
+
+Design FastAPI service
+Redis caching
+Database optimization
+Kafka architecture
+AWS deployment
+AI
+
+Final Project
+
+Build something impressive:
+
+Option 1
+
+OCR + AI Extraction Platform
+
+Option 2
+
+Invoice Processing System
+
+Option 3
+
+Legal Document Analyzer
+
+Option 4
+
+Insurance Document Processing
+
+These align closely with your current OCR/XML background and look strong on a resume.
+
+Skills You Should Have After 6 Months
+Python
+Advanced Python
+FastAPI
+Async Programming
+Testing
+Logging
+Database
+MySQL/PostgreSQL
+Query Optimization
+Indexing
+System Design
+Load Balancer
+Cache
+Redis
+Kafka
+Microservices
+Cloud
+Docker
+AWS
+CI/CD
+AI
+LLM APIs
+RAG
+Vector Databases
+LangChain
+AI Agent Basics
+DSA
+250–300 problems
+Comfortable with Medium-level interview questions
+
+
+
+
+
+
+##################################################################################################
+if __name__ == "__main__": It means when you are running the script directly run inside these blocks only.
+
+This line is using for using one script code in another code
+example:
+
+
+# mycode.py
+def add(a, b):
+    return a + b
+
+if __name__ == "__main__":
+    print("Running directly")
+    print(add(2, 3))
+
+
+in another script just import that
+import mycode
+output:
+Running directly
+5
+
+
+##########################################################################################################
+
+In flask
+
+
+Hostname to listen on. Defaults to 127.0.0.1 (localhost). Set to 0.0.0.0 to have server available externally
+    
+port
+Defaults to 5000
+
+
+
+
+
+
+
+
+################################################GIT and GITHUB###############################################
+
+
+GIT means It is software installed in our machine.If we commit it will be only in our system only.
+
+GITHUB means It is a cloud service that stores git repositories online.
+
+steps::
+
+To intialize git::
+git init
+
+
+To add files to tracking list::
+git add . it will all files to track list
+
+
+To commit files command is
+git commit -m "First commit"
+
+
+commit is a snapshot of our project it will save the version of that code wwhen we give commit.
+
+
+
+
+
+#############################################################################################################
+SUBSTRING CONCEPT IN PYTHON
+
+text = "Hello, World!"
+
+# Extract "Hello"
+sub1 = text[0:5]
+print(sub1)  # Output: Hello
+
+# Extract "World"
+sub2 = text[7:12]
+print(sub2)  # Output: World
+
+# From start to index 4
+sub3 = text[:5]
+print(sub3)  # Output: Hello
+
+# From index 7 to end
+sub4 = text[7:]
+print(sub4)  # Output: World!
+
+# Using negative indices (from end)
+sub5 = text[-6:-1]
+print(sub5)  # Output: World
+
+
+
+
+###################################For reading excel in python###################################################
+import pandas as pd
+import os
+import subprocess
+import mysql.connector
+
+# ==== CONFIGURATION ====
+base_path = "/home/ajay/Downloads/projects/sln/starclips/workfiles/"
+
+# DB connection details
+db_config = {
+    "host": "localhost",
+    "user": "your_username",
+    "password": "your_password",
+    "database": "your_database"
+}
+
+# ==== MAIN SCRIPT ====
+issue_names = set()
+
+# Load Excel file
+df = pd.read_excel("/home/ajay/Downloads/projects/sln/ICP-SNL-Zone Overlap File List.xlsx")
+
+#another example of **
+
+def employee(name,salary,dob):
+   print(f"employee deatils are ::name::{name} and salary ::{salary} and dob::{dob})
+
+
+data={"name":"ajay",
+      "salary":"salary",
+      "dob":"dob"}
+
+employee(**data)
+
+** used to unpack the dictionary into keyword arguments.
+
+try:
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    for index, row in df.iterrows():
+        issue_name = str(row["Issue Name"]).strip()
+        batch_name = str(row["Batch Name"]).strip()
+        issue_names.add(issue_name)
+
+        zone_overlap = str(row["Zone Overlap"])  # e.g., "6,10"
+
+        if zone_overlap.strip() and zone_overlap.lower() != "nan":
+            # Split pages
+            pages = [p.strip() for p in zone_overlap.split(",") if p.strip().isdigit()]
+            for page in pages:
+                page_number = int(page)
+
+                # Source and destination paths
+                src_dir = os.path.join(base_path, batch_name, issue_name, "backup", "finish-zoning")
+                dst_dir = os.path.join(base_path, batch_name, issue_name)
+
+                # File name format: IssueName-PageNumber.xml
+                file_name = f"{issue_name}-{page_number:05d}.xml"
+
+                src_file = os.path.join(src_dir, file_name)
+                dst_file = os.path.join(dst_dir, file_name)
+
+                # Copy if exists
+                if os.path.exists(src_file):
+                    subprocess.run(["cp", src_file, dst_file], check=True)
+                    os.chmod(dst_file, 0o777)  # give full permissions
+                    print(f"Copied: {src_file} -> {dst_file}")
+
+                    # Update DB immediately after copy
+                    sql = """UPDATE coc_issue_info SET cii_process_id='25',cii_lock_status='0' WHERE cii_issue_name = %s AND cii_batch_name = %s"""
+                    cursor.execute(sql, (issue_name, batch_name))
+                    print(f"DB updated for issue: {issue_name}, batch: {batch_name}")
+    
+                else:
+                    print(f"File NOT found: {src_file}")
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    print("\nAll DB updates committed successfully.")
+
+except mysql.connector.Error as err:
+    print(f"Database error: {err}")
+
+# ==== Final print ====
+print("\nFinal Issues:", ",".join(issue_names))
+#############################################################################################################################################################
+
+##########For simulataneous iteration#######
+for page1, page2 in zip(pdf1_data, pdf2_data):
+
+zip is using to iterate simultaneously in two variables and that iteration will stops at shorter length of variable.
+
+
+This line loops through two lists (or iterables) simultaneously.
+
+another example of zip is::
+names = ["Ajay", "Sai", "Ravi"]
+ages = [25, 26, 27]
+
+for name,age in zip(names,ages):
+    print(name,age)
+
+####################################################FILE OPERATIONS########################################################################
+#read mode
+with open("file.txt", "r") as file:
+    content = file.read()
+    #read line by line
+    for line in file:
+        print(line)
+    print(content)
+
+#write mode(writing a file will overwrite the existing content)
+with open("file.txt", "w") as file:
+    file.write("Hello, World!")
+    file.write("This is a new line.")
+
+#write mode with append(writing a file will append to the existing content)
+with open("file.txt", "a") as file:
+    file.write("This line will be appended to the existing content.")
+
+
+#write multiple lines to a file
+lines = ["Line 1\n", "Line 2\n", "Line 3\n"]
+with open("file.txt", "w") as file:
+    file.writelines(lines)
+
+
+
+##########working with binary files
+In binary file we will update bytes instead of characters. so the modes are in binary format like "rb","wb","ab" etc
+
+#read binary mode
+with open("file.bin", "rb") as file:
+    content = file.read()
+    print(content)
+
+#write binary mode
+with open("file.bin", "wb") as file:
+    data = b"Hello, World!"  # bytes data
+    file.write(data)
+
+#append binary mode
+with open("file.bin", "ab") as file:
+    data = b" This will be appended."  # bytes data
+    file.write(data)
+
+
+Task 1:: reading a file and counting the number of lines in a file and no of words and no of characters in a file
+with open("file.txt", "r") as file:
+    content = file.read()
+    lines = content.splitlines()
+    words = content.split()
+    characters = len(content)
+
+#file.seek(0) -- it will move the file pointer to the beginning of the file so that we can read the file again from the beginning.
+
+########################################################################################################################################################
+In requirements.txt file we can specify the modules what we need for our project and we can install those modules using command
+
+"pip install -r requirements.txt"
+"pip install -r requirements.txt"
+"pip install -r requirements.txt"
+
+
+#####################################################################python list string operations########################################################
+temp=nums[:k]  ---- to get the first k elements in a list
+del nums[:k]   ----- to delete the first k elements in a list
+nums+=temp     -----  to concatenate two list or we can use nums.extend(temp)
+
+
+
+
+To sort an dictionary in descending order based on values
+
+sorted_dict = sorted(freq_dict.items(), key=lambda item: item[1], reverse=True)
+
+This is used for sorting dict
+
+It will convert the dict to tuple in key value pairs
+
+freq_dict = {'a': 3, 'b': 1, 'c': 2}
+freq_dict.items()
+dict_items([('a', 3), ('b', 1), ('c', 2)])
+
+key=lambda item: item[1] --here we will tell based on what you need to sort
+Before and after sorting
+[('a', 3), ('c', 2), ('b', 1)]
+sorted_dict == [('a', 3), ('c', 2), ('b', 1)]
+
+for iterating through sortd dict list only two iterations 
+for k, v in sorted_dict[:2]:
+    ans += v
+
+
+To delete any key from dictionary:::
+del dict_name[key]
+
+
+###############################################################################################################################################################
+##################variable naming conditions##########################################################
+*variable name must starts with letter or underscore
+*Variable name cannot start with a number
+
+*Assigning multiple variables at a time
+x, y, z = "Orange", "Banana", "Cherry"
+
+fruits = ["apple", "banana", "cherry"]
+x, y, z = fruits
+print(x)
+print(y)
+print(z)
+
+
+**we can declare a global variable inside the function using global keyword
+def myfunc():
+  global x
+  x = "fantastic"
+myfunc()
+print("Python is " + x)
+
+#########################################################################################################################
+
+####################################PYTHON DATATYPES########################################################################
+
+*text type: string
+*numeric type: int,float,complex
+*sequence types: list,tuple,range
+*mapping :dict
+################################################################################################################
+
+#########################################Random values######################################################
+import random
+print(random.randrange(1,10))
+###############################################################################################################
+
+##############################String changes##############################################################
+* changing string to upper or lower  format
+a="hello world"
+b=a.upper()
+
+*removing whitespace fro starting and ending of string
+a="hello world"
+a.strip()
+
+*for replacing
+a = "Hello, World!"
+print(a.replace("H", "J"))
+
+#splitting the words
+a = "Hello, World!"
+print(a.split(","))
+
+#######################################################################################################################
+
+
+########################################################################################################
+To write content into a file 
+
+cat > /etc/systemd/system/zookeeper.service << EOF
+...
+EOF
+cat > file
+→ Writes content into a file.
+/etc/systemd/system/zookeeper.service
+→ This is the systemd service definition file location.
+<< EOF ... EOF
+→ This is a heredoc. Everything between the two EOF lines is written into the file.
+
+example::
+# Create systemd service for ZooKeeper
+cat > /etc/systemd/system/zookeeper.service << EOF
+[Unit]
+Description=Apache ZooKeeper Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/opt/kafka/bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties
+ExecStop=/opt/kafka/bin/zookeeper-server-stop.sh
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+#################################################PYTHON LISTS#####################################################
+
+In python lists  can allow different data types
+
+*  List is a collection which is ordered and changeable. Allows duplicate members.
+   Tuple is a collection which is ordered and unchangeable. Allows duplicate members.
+   Set is a collection which is unordered, unchangeable*, and unindexed. No duplicate members.
+   Dictionary is a collection which is ordered** and changeable. No duplicate members.
+
+*list operations
+
+thislist = ["apple", "banana", "cherry"]
+
+thislist.insert(2, "watermelon")
+
+print(thislist) 
+
+
+['apple', 'banana', 'watermelon', 'cherry']
+
+
+*Adding to lists
+
+1. append(to append each element)
+2.extend
+3.listname.remove(item)
+4.listname.pop(item_index) if you dont mention item index it will remove last item
+5. del list_name
+6. listname.clear()
+
+
+###############################################################################################################################
+removing elements from python
+
+numbers = [1, 2, 3, 4, 2]
+numbers.remove(2)   # removes the first occurrence of 2
+print(numbers)      # [1, 3, 4, 2]
+
+numbers = [10, 20, 30, 40]
+numbers.pop(2)      # removes element at index 2 (30)
+print(numbers)      # [10, 20, 40]
+
+
+#######################################################################################################################
+
+
+###################FILE READING#############################
+with open(pbt_xml_path,"r",encoding="utf-8") as f:
+   pbt_xml_content=f.read()
+
+############################################SCOPE#####################################################################
+enimies=2
+
+
+def inside_enimies():
+    enimies=3
+    print(f"inide the function:{enimies}")
+inside_enimies()
+print(f"outside the function:{enimies}")
+
+
+output:
+inide the function:3
+outside the function:2
+
+*In python variables dont have block scope.(ex:if,for,while blocks) but python have local scope.
+*******In python how to change global variable values
+
+# Global variable
+count = 0
+
+def increase_count():
+    global count   
+    count += 1   
+
+def decrease_count():
+    global count
+    count -= 1
+
+# Before function calls
+print("Initial count:", count)
+
+increase_count()
+print("After increase:", count)
+
+decrease_count()
+print("After decrease:", count)
+
+output:
+Initial count: 0
+After increase: 1
+After decrease: 0
+
+
+
+****************In python no built in concept for constants in python but naming convention is different If the variable is  declared with all cpas then it is declared as constant.
+PI = 3.14159
+MAX_USERS = 100
+APP_NAME = "MyCoolApp"
+
+
+
+##########################################Generating Random Number##################################################################
+
+import random
+
+num=random.randint(1,100)
+it will generate the random number between 1 to 100
+
+
+
+
+
+#####################################################################################################################################
+
+####################################################LINKED LIST#####################################################################
+A linked list is a linear data structure where elements are stored in seperate memory locations and connected using pointers(references)
+
+Each element is called a node
+Ecvery node has two celss
+first cell has data
+second cell has adress of the next node.
+
+class Node:
+    def __init__(self,data):
+        self.data=data
+        self.next=None
+n1=Node(10)
+n2=Node(20)
+n3=Node(30)
+
+n1.next=n2
+n2.next=n3
+
+Difference between list and linked list::
+
+1. Memory :: In python list it is continous and in linked list it is Non continous
+2. Access by index:: In list O(1) and in linked list O(n)
+
+
+##Types of linked list::
+
+1.Single linked list::
+
+Each data contains data and pointer to next node.
+
+class Node:
+   def __init__(self,data):
+       self.data=data
+       self.next=None
+
+
+Advantages of single linked list::
+It is less memory usage
+Easy to implement
+
+Disadvantages::
+Can move only forward.
+Cannot directly access previous node.
+
+
+2.Double Linked List::
+
+Each data contains previous pointer and data and next pointer
+
+class Node:
+    def __init__(self,data):
+         self.prev=None
+         self.data=data
+         self.next=None
+
+
+3.Circular Linked List::
+
+Last node points back to first node.
+10 -> 20 -> 30 -> 40
+^                 |
+|_________________|
+
+4. Circular Double Linked List::
+
+
+###################################################################################################################################
+Tagged-pdf
+
+BDC -begin marked content
+EMC -End of marked content
+
+
+
+
+
+####################################################CURL############################################################################
+
+curl -- it is called as client url
+
+curl can send http requests
+upload files
+download files
+call apis
+test servers.
+
+
+*curl is faster than postman user interface
+
+example::
+curl https://httpbin.org/get -- url https://httpbin.org/get and no method specified so it goes default get method.
+
+
+#For get method
+
+curl -X GET https://jsonplaceholder.typicode.com/users/
+
+
+# -i  → -i response shows headers and body and response
+curl -i https://jsonplaceholder.typicode.com/users/1
+
+
+Command:
+
+curl -i https://jsonplaceholder.typicode.com/users/1
+
+Output looks like:
+
+HTTP/2 200
+date: Fri, 29 May 2026 07:00:00 GMT
+content-type: application/json; charset=utf-8
+content-length: 509
+
+{
+  "id": 1,
+  "name": "Leanne Graham",
+  "username": "Bret"
+}
+
+#-I -> response shows only headers not response.
+
+outpoot looks like this
+
+HTTP/2 200
+content-type: application/json; charset=utf-8
+content-length: 509
+cache-control: max-age=43200
+
+
+
+# -v  → verbose — shows everything (request + response headers + body)
+curl -v https://jsonplaceholder.typicode.com/users/1
+
+-v -> shows request and response headers and body
+ output looks like this
+
+ * Connected to jsonplaceholder.typicode.com
+> GET /users/1 HTTP/2
+> Host: jsonplaceholder.typicode.com
+> User-Agent: curl/8.5.0
+> Accept: */*
+
+< HTTP/2 200
+< content-type: application/json
+< content-length: 509
+
+{
+  "id": 1,
+  "name": "Leanne Graham"
+}
+
+#curl -s https://jsonplaceholder.typicode.com/users/1
+
+-s means silent mode 
+
+sometimes when we calling curl commands 
+
+% Total    % Received % Xferd
+100   509  100   509
+
+it is showing like this and it removes partial error messages and gives cleaner output
+
+output looks like this::
+{
+  "id": 1,
+  "name": "Leanne Graham"
+}
+
+
+
+#curl -o target_file_path https://jsonplaceholder.typicode.com/users/1
+
+-o it is downloading the response into another file.
+
+
+##curl -s -o /dev/null -w "Status: %{http_code}\nTime: %{time_total}s\n" \
+https://jsonplaceholder.typicode.com/users/1
+
+to check how much time it is taking to call api.
+
+
+#curl -s https://jsonplaceholder.typicode.com/users/1 | python3 -m json.tool
+
+It is used for to format the json 
+
+curl -s https://jsonplaceholder.typicode.com/users/1 
+
+it will give json in one line
+{"id":1,"name":"Leanne Graham","username":"Bret"}
+
+like this if it is single line means okay but what if output json contains 100 lines it will come in single line. To format into normal json we are using  "| python3 -m json.tool" it will format the json.
+
+Instead of "| python3 -m json.tool" this one we can use 
+jq also for pretty printing json
+
+
+## curl -s url | jq  -- jq will pretty print the json file.
+
+## curl -s url | jp ".name" It will give the json name variable output.
+
+
+########GET means we are going to fetch the data 
+########POST means we are going to update the data in the server.
+
+
+for post In postman setup is
+
+Method    : POST
+URL       : https://jsonplaceholder.typicode.com/posts
+Headers   : Content-Type: application/json
+Body      : raw → JSON
+            {
+              "title": "My First Post",
+              "body": "Hello from Postman",
+              "userId": 1
+            }
+
+
+
+curl -X POST  https://jsonplaceholder.typicode.com/posts -H "Content-Type: application/json" -d '{"title": "My First Post","body": "Hello from Postman", "userId": 1}'
+
+
+Another curl command is 
+
+
+curl -X POST https://jsonplaceholder.typicode.com/posts -H "Content-Type: application/json" -H "Accept:application/json" -d '{"title": "My First Post","body": "Hello from Postman", "userId": 1}'
+
+here in curl command Content-Type is request format
+ and Accept means response type.
+
+
+
+###########
+creating any json file or text file using cat
+
+cat > file_path << 'EOF'
+{
+    "name" : "ajay"
+}
+EOF
+
+
+after this automatically data saves to this file.
+
+
+If i want to call one api but i dont have data but the data is present in file means then we will call
+
+
+curl -X POST url -H "Content-Type: application/json" -d @file_path   -It will automatically take that content and it will call the api.
+
+
+
+
+### new conet type is -F
+curl -X POST https://jsonplaceholder.typicode.com/posts -F "title=My First Post" -F "body=Hello from Postman" -F "userId=1"
+
+we are sending the data in multiple formats
+1. -d means we are sending data in json format
+2. -F means we are sending data in form data format(multipart form data)
+3. -H means we are sending data in header format
+
+-d is generally using in rest apis .
+-F is generally using in soap apis and when we are uploading files to the server. and also in html forms we are using multipart form data format so in that case we will use -F in curl command.
+
+
+##URL encoded form data format
+curl -X POST https://jsonplaceholder.typicode.com/posts -H "Content-Type: application/x-www-form-urlencoded" -d "title=My First Post&body=Hello from Postman&userId=1"
+
+what is url encoded data format?
+URL-encoded data format is a way to encode key-value pairs in a format that can be safely transmitted in a URL or as part of an HTTP request body. In this format, special characters are replaced with a percent sign (%) followed by two hexadecimal digits representing the ASCII code of the character. For example, spaces are encoded as %20, and the ampersand (&) is encoded as %26. This encoding is commonly used when submitting form data in web applications or when sending data in HTTP requests, ensuring that the data is properly formatted and can be correctly interpreted by the server.
+
+example of url encoded data format:
+title=My%20First%20Post&body=Hello%20from%20Postman&userId=1
+
+after url decoding it will look like this:
+title=My First Post&body=Hello from Postman&userId=1
+
+why we need url encoding?
+URL encoding is necessary to ensure that special characters in data are properly transmitted and interpreted in URLs and HTTP requests. It prevents issues that can arise from characters that have special meanings in URLs (like &, ?, /) or that may not be allowed in URLs (like spaces). By encoding these characters, we can ensure that the data is transmitted correctly and that the server can accurately parse and process the information being sent in the request.
+
+
+#################################
+
+Bash script means ::
+
+if i want to run some commands in sequence then we can write those commands in a file and we can run that file as a script instead of running those commands one by one in terminal.
+
+to run a bash script we need to give execute permission to that file using command
+chmod +x script_name.sh
+
+example of bash script::
+#!/bin/bash
+echo "Hello, World!"
+echo "This is a bash script."
+cd project
+git pull
+python app.py
+
+
+practice exercises::
+
+1.curl -X POST https://jsonplaceholder.typicode.com/todos -H "Content-Type:application/json -d '{"title": "Learn cURL", "completed": false, "userId": 1}'
+
+2. cat > details.json << 'EOF'
+{
+    "name": "Ajay",
+    "age": 30,
+    "city": "New York"
+}
+EOF>>
+
+curl -X POST https://jsonplaceholder.typicode.com/users -H "Content-Type: application/json" -d @details.json
+
+  Write a bash script that:
+  1. POSTs to create a user at https://reqres.in/api/users
+  2. Saves the response to response.json
+  3. Extracts and prints the id from response.json
+
+
+#!/bin/bash
+# Step 1: POST to create a user and save the response
+curl -X POST https://reqres.in/api/users \
+-H "Content-Type: application/json" \
+-d '{"name": "Ajay", "job": "Developer"}' \
+-o response.json
+
+# Step 2: Extract and print the id from the response
+id=$(jq -r '.id' response.json)
+echo "User ID: $id"
+
+
+
+
+##############PUT and PATCH methods in curl
+
+PUT method is used to update the entire resource and while patch method is used to update the partial resource.
+
+
+
+
+curl command for that one is 
+
+curl -X PUT url -H "Content-Type:application/json" -d '{"title": "Updated Title", "body": "Updated Body", "userId": 1}'
+
+
+
+###############HEADERS TYPES 
+
+
+# Content-Type — what format is the body you're sending
+-H "Content-Type: application/json"
+-H "Content-Type: application/x-www-form-urlencoded"
+-H "Content-Type: multipart/form-data"
+
+# Accept — what format you want the response in
+-H "Accept: application/json"
+-H "Accept: application/xml"
+-H "Accept: text/html"
+-H "Accept: text/plain"
+
+# Authorization — prove who you are
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
+-H "Authorization: Basic dXNlcjpwYXNz"
+-H "X-API-Key: your-api-key-here"
+
+# Custom headers
+-H "X-Request-ID: abc-123"
+-H "X-Client-Version: 2.1.0"
+
+request headers tpes 
+1. application/json:: json format
+2. application/x-www-form-urlencoded:: url encoded format
+3. multipart/form-data:: form data format
+
+response headers types::
+1. application/json:: json format
+2. application/xml:: xml format
+3. text/html:: html format
+4. text/plain:: plain text format
+
+Authorization headers types::
+1. Bearer Token:: It is used for token-based authentication where the client sends a token in the Authorization header to prove their identity.
+2. Basic Authentication:: It is a simple authentication scheme where the client sends a username and password encoded in Base64 in the Authorization header.
+3. API Key:: It is a custom header wherethe client sends an API key to authenticate their requests.
+
+Customer headers types::
+1. X-Request-ID:: It is a custom header used to track and correlate requests across different services or components in a distributed system.
+2. X-Client-Version:: It is a custom header used to indicate the version of the client application making the request, which can be useful for debugging and analytics purposes.
+
+what is the use of customer headers types?
+Custom headers are used to provide additional information about the request or the client making the request. They can be used for various purposes, such as tracking requests, providing client version information, or passing custom metadata that is not covered by standard headers. Custom headers can help improve debugging, analytics, and overall communication between the client and server by allowing developers to include specific information relevant to their application or use case
+
+
+
+
+1xx — Informational
+2xx — Success
+  200 OK              — standard success
+  201 Created         — POST successful, new resource created
+  204 No Content      — DELETE successful, nothing to return
+
+3xx — Redirect
+  301 Moved Permanently
+  302 Found (temporary redirect)
+
+4xx — Client Error (your mistake)
+  400 Bad Request     — malformed JSON, missing field
+  401 Unauthorized    — no/wrong auth token
+  403 Forbidden       — authenticated but not allowed
+  404 Not Found       — resource doesn't exist
+  422 Unprocessable   — validation failed
+  429 Too Many Requests — rate limited
+
+5xx — Server Error (their mistake)
+  500 Internal Server Error
+  502 Bad Gateway
+  503 Service Unavailable
+
+
+
+
+##########################################################################################################################################
+#####################################################REDIS######################################################################
+
+Redis ::
+Redis is an open-source, in-memory data structure store that can be used as a database, cache, and message broker. It supports various data structures such as strings, hashes, lists, sets, and sorted sets. Redis is known for its high performance and low latency, making it suitable for real-time applications. It also provides features like replication, persistence, and pub/sub messaging.
+
+example::
+You are in library and asks librarian for a book he goes to that shelf and he will give the book and if the book is on the desk of librarian then he will give you the book immediately without going to the shelf. So that is the concept of cache and redis is used for caching.
+
+Instead of fetching data from database every time we can store that data in redis cache and when we need that data we can fetch it from redis cache instead of fetching from database every time. It will improve the performance of the application.
+
+
+what is difference between redis and memcached?
+Redis and Memcached are both in-memory data stores used for caching, but they have some key differences:
+1.Redis supports a wider range of data structures (strings, hashes, lists, sets, sorted sets) while Memcached primarily supports key-value pairs.
+2.Redis provides persistence options (RDB snapshots, AOF logs) to save data to disk, while Memcached is purely in-memory and does not offer persistence.
+   RDB snapshots means Redis can take periodic snapshots of the in-memory data and save it to disk, allowing for data recovery in case of a crash. AOF (Append Only File) logs every write operation received by the server, which can be replayed to reconstruct the dataset after a restart.
+3.Redis has built-in replication and high availability features, while Memcached does not have native support for replication or clustering.
+4.Redis supports Lua scripting for complex operations, while Memcached does not have scripting capabilities.
+5.Redis is often used for more complex use cases that require advanced data structures and persistence, while Memcached is typically used for simple caching scenarios where high performance is the primary concern.
+
+
+#redis stands for Remote Dictionary Server.
+redis is a
+1. In memory data structure store stores in ram not in disk
+2. It is open source
+3. It is used as a database, cache and message broker
+4. It supports various data structures like strings, hashes, lists, sets and sorted sets.
+5. It is known for its high performance and low latency.
+6. It provides features like replication, persistence and pub/sub messaging.
+
+
+why companies use redis?
+1. Twitter uses Redis for caching and real-time analytics to handle high traffic and provide fast response times.
+
+example::
+When a user logs into Twitter, their session data and frequently accessed information (like their timeline) can be stored in Redis. This allows Twitter to quickly retrieve this data without having to query the primary database every time, improving performance and user experience.'
+
+2. Instagram uses Redis for caching and real-time data processing to support features like feed generation and notifications.
+
+######Redis vs PostgreSQL
+
+storage -- postgresql is disk based storage and redis is in memory data structure store
+data size -- postgresql can handle large data size because it is disk based storage but redis is in memory data structure store so it can handle limited data size.
+
+
+when to use redis and when to use postgresql?
+Use Redis when you need:
+store user sessions::
+my doubt is if we are storing user sessions ex: instagram for each user some data will be there like user id, last login time, etc so that data is stored in redis because it is in memory data structure store and it will give fast response time when we need to access that data. but at a time lakhs of employees are present in instagram so how much data we can store in redis because it is in memory data structure store and it can handle limited data size. so in that case we can use sharding in redis to distribute the data across multiple redis instances to handle large data size.
+
+redis to distribute the data across multiple redis instances -- sharding is a technique used to distribute data across multiple Redis instances. It allows you to partition your data into smaller chunks and store them on different Redis servers. This can help you scale your Redis deployment horizontally and handle larger data sizes than a single instance can manage.
+
+Rate limit Api endpoints::
+when you want to limit the no.of requests a user can make to an API endpoint in a given time period, you can use Redis to implement rate limiting. Redis can store the count of requests made by each user and the timestamp of their last request, allowing you to enforce limits and prevent abuse of your API.
+
+
+Real time leaderboars:
+When you want to maintain a real-time leaderboard for a game or application, you can use Redis sorted sets to store and update user scores. Redis allows you to quickly retrieve the top N users based on their scores, making it ideal for real-time leaderboards.
+
+
+when not to use redis??
+complex relational queries
+Data larger available than ram
+when you need acid transactions
+when you need strong consistency
+when you need full text search capabilities
+when you need to perform complex data analysis or reporting
+when you need to store large binary data (like images or videos)
+when you need to store large amounts of data that exceed the memory capacity of your Redis instance
+when you need to perform complex joins or aggregations across multiple tables
+when you need to ensure data durability and persistence in case of server failures
+when you need to enforce complex data integrity constraints or relationships between entities
+when you need to perform full-text search or advanced querying capabilities that are not natively supported by Redis
+when you need to store and manage large binary data (like images, videos, or files) that may not fit efficiently in memory
+
+
+To check the version of redis
+
+redis-server --version
+
+
+systemctl start redis-server
+systemctl enable redis-server
+systemctl stop redis-server
+systemctl status redis-server
+
+#check whether redis is running or not
+redis-cli ping
+output: PONG if redis is running otherwise it will give error message.
+
+#######To list the what are the processes are reunning in server and for that what are the process ids and cpu usage and memory usage####
+
+
+ps aux | grep redis -- it will give the process details of redis server like process id, cpu usage, memory usage etc.
+
+ps aux --list all the running processes in the server and for that what are the process ids and cpu usage and memory usage etc.
+
+ps -ef -- it will give the process details of all the running processes in the server like process id but cpu usage and memory usage will not give.
+
+
+####cli commands for redis
+
+redis-cli
+
+to 
+
+##################################################FASTAPI##################################################################################
+
+Fastapi is a modern python web framework used to build
+*RESTAPIS
+*Microservices
+High performing applications
+
+why fastapi is popular::
+
+1. HIGH PERFORMANCE
+
+   It is built on starlette(web framework)
+   Pyndatic(validation)
+   and supportsasynchronous gateway interface
+
+
+2. Automatic request validation
+3.Automatic API documentation using swagger ui
+4.Fast api supports async support
+
+####difference between fastapi and flask
+
+| Feature                | Flask                 | FastAPI         |
+| ---------------------- | --------------------- | --------------- |
+| Release Year           | 2010                  | 2018            |
+| Performance            | Good                  | Faster          |
+| Async Support          | Limited               | Native          |
+| Type Hints             | Optional              | Core Feature    |
+| Validation             | Manual                | Automatic       |
+| Swagger Docs           | Extra packages needed | Built-in        |
+| Learning Curve         | Easier                | Slightly higher |
+| Modern API Development | Good                  | Excellent       |
+| AI/ML APIs             | Possible              | Preferred       |
+| Concurrency            | WSGI                  | ASGI            |
+
+
+REST API::: Representational state transfer API
+
+A restapi is a way to communicate between two applications over http methods like GET,POST,PUT,DELETE
+
+server sending data in representational format.
+
+GET:: READ
+POST :: CREATE
+PUT:: UPDATE
+DELETE:: DELETE
+
+
+
+
+
+
+####################################################OOPS##################################################################################
+
+#######constructing the object
+In another_module.py script 
+
+another_variable=12
+
+
+##in main.py script
+
+import another_module
+
+print(another_module.another_variable) output:12
+
+######creating of object in python
+obj_name=class_name()
+ex: timmy=Turtle()
+object attributes#######
+print(timmy.height)
+object methods########
+print(timmy.jump())
+
+
+
+*Each file we are creating in a project that file is called as a module.
+*package is a collection of modules or files or folder.
+ex:
+mypackage/
+    __init__.py
+    math_utils.py
+    string_utils.py
+
+
+This is the folder structure if u want to import modules 
+
+import math_utils.py
+import string_utils.py
+
+or otherwise
+from mypackage import string_utils.py
+like that we need to import.
+##CONSTRUCTOR##### 
+A constructor is a special method in class that is automatically called when an object is created.
+
+main purpose of constructor is to intialize the objects data.
+
+Example for oops::
+
+class Bankaccount:
+   def __init__(self,account_no,balance):
+        self.account_no=account_no
+        self.balance=balance
+
+    def with_draw(self,amount):
+        if self.balance<amount:
+            print(f"Insufficient funds")
+        self.balance-=amount
+
+    def deposit(self,amount):
+        self.balance+=amount
+
+
+##CLASS#######
+class is defined as blueprint for creating objects. It is a user defined data type that contains attributes and methods.
+for example:
+class Dog:
+    species = "Canis familiaris"  # class attribute
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    def bark(self):
+        return "Woof!"
+
+Dog is an class which are having attributes name and age and method bark. We can create an object of the class Dog like this:
+
+my_dog = Dog("Buddy", 3)
+my_dog.species  # Output: "Canis familiaris" #for all objects of the class Dog the value of species will be same because it is a class attribute
+my_dog.name  # Output: "Buddy"
+
+#######INHERITANCE#######
+Inheritance is a feature of object-oriented programming that allows a new class (called a child class or subclass) to inherit attributes and methods from an existing class (called a parent class or superclass). This promotes code reusability and establishes a natural hierarchical relationship between classes.
+
+for example:
+class Animal:
+    def eat(self):
+        return "Eating..."
+
+class Dog(Animal):  # Dog is inheriting from Animal
+    def bark(self):
+        return "Woof!"
+
+In this example, the Dog class inherits the eat method from the Animal class. This means that an instance of the Dog class can call both the eat method (inherited from Animal) and the bark method (defined in Dog).
+
+my_dog=Dog()
+print(my_dog.eat())
+
+why we need inheritance? means
+
+1. Code reusability: Inheritance allows us to reuse code from existing classes, reducing redundancy and improving maintainability.
+2. Logical hierarchy: It helps to establish a natural hierarchical relationship between classes, making it easier to understand and organize code.
+3. Extensibility: Inheritance allows us to create new classes that extend the functionality of existing classes without modifying the original class, which promotes flexibility and scalability in software design.
+
+super() function in inheritance:::
+The super() function in Python is used to call a method from the parent class in a child class. It allows you to access and invoke methods of the superclass without explicitly naming it, which is especially useful in cases of multiple inheritance. The super() function is commonly used in the __init__ method of a child class to ensure that the initialization code of the parent class is executed.
+
+for example:
+class Animal:
+    def __init__(self, name):
+        self.name = name
+class Dog(Animal):
+    def __init__(self, name, breed):
+        super().__init__(name)  # Call the __init__ method of the parent class (Animal)
+        self.breed = breed
+In this example, the Dog class inherits from the Animal class. The __init__ method of the Dog class uses super() to call the __init__ method of the Animal class, ensuring that the name attribute is properly initialized for instances of the Dog class.
+
+what if we dont use super() in the child class::
+If you don't use super() in the child class, the __init__ method of the parent class will not be called automatically, and any initialization code defined in the parent class will not be executed. This means that attributes defined in the parent class may not be properly initialized for instances of the child class, which can lead to errors or unexpected behavior when you try to access those attributes.so name will not be initialized for the Dog class and it will raise an error when you try to access the name attribute of a Dog instance.
+
+
+###MULTIPLE INHERITANCE##########
+
+When a class inherits from more than one base class it is called as Multiple Inheritance
+
+class Dog(Animal,Pet):
+    def __init__(self,name,owner):
+           Animal.__init__(self,name)
+           Pet.__init__(self,owner)
+
+Dog is inherits from Animal and Pet class it is called as multiple inheritance.
+
+
+
+##############################TYPE HINTS###################
+Type hints:: It is a way to indicate the expected data types of variables, function parameters, and return values in Python. It helps improve code readability and can assist with static type checking. It will not affect the runtime behavior of the code but it can be used by tools like linters and IDEs to catch potential type-related errors.
+
+It is used for better code readability and to catch potential type-related errors during development. It can also help with code documentation and make it easier for other developers to understand the expected data types when using functions or working with variables.
+
+
+Example::
+# ❌ WITHOUT type hints - confusing
+def process(data, config, flag):
+    # What is data? A string? A list? A dict? A file?
+    # What is config? What is flag?
+    pass
+
+# ✅ WITH type hints - instantly clear
+def process(data: List[str], config: Dict[str, int], flag: bool) -> str:
+    # data is a list of strings
+    # config is a dict with string keys and int values
+    # flag is True/False
+    # returns a string
+    pass
+
+
+if we see our code is more readable and we can easily understand what type of data we are passing to the function and what type of data we are returning from the function.
+
+###################PRINTING OBJECT DATA#######################
+
+To print the object data in program
+
+print(f"tiff_metafata::{tiff_metadata.__dict__}")
+
+
+
+
+
+########################TYPES OF METHODS IN CLASSES#####################
+
+#public method:: It is a method that can be accessed from outside the class. It is defined without any special prefix.
+
+ex::
+class MyClass:
+    def public_method(self):
+        print("This is a public method")
+
+#private method:: It is a method that can only be accessed from within the class. It is defined with a double underscore prefix.
+
+ex::
+class MyClass:
+    def __private_method(self):
+        print("This is a private method")
+
+#IF starts with a single underscore it is a convention to indicate that it is a protected method but it can be accessed from outside the class but it is not recommended to access it from outside the class.
+ex::
+class MyClass:
+    def _protected_method(self):
+        print("This is a protected method")
+
+
+
+############
+self.__balance = intial_balance #private variable so no one can access it directly
+
+###########
+
+COMPOSITION:: One class is using in another class is called as composition.
+
+
+def add_student(self, student: Student):
+        if not isinstance(student, Student):
+            raise ValueError("Only Student instances can be added.")
+        self.__students.append(student)
+
+        #what is the use of isinstance here? It checks if the student being added is an instance of the Student class, ensuring that only valid Student objects are added to the classroom. This helps maintain data integrity and prevents errors that could arise from adding incompatible types.
+
+        #when we are importing from one class to another class when we passing object to an method to check whether it is correct object or not . we are using isinstance.
+
+
+
+####@dataclass
+
+@dataclass is a decorator that automatically generates common methods like __init__ ,__repr__, like these methods
+
+without dataclass:
+
+class Employee:
+    def __init__(self, emp_id, name, salary):
+        self.emp_id = emp_id
+        self.name = name
+        self.salary = salary
+
+    def __repr__(self):
+        return f"Employee(emp_id={self.emp_id}, name='{self.name}', salary={self.salary})"
+
+
+@dataclass
+class Employee:
+    emp_id: int
+    name: str
+    salary: float
+
+
+
+
+
+
+
+
+
+
+#################################################################################################################################
+
+
+###################################################DJANG0#############################################################################
+
+Django is  a python framework which makes easier to create sites using python.
+Django emphasizes reusability and "pluggability" of components, rapid development, and the principle of "don't repeat yourself". It follows the model-template-view architectural pattern.
+
+##HOW DJANGO WORKS?
+1. Django works on model-template-view architectural pattern. It is a software design pattern that separates the data (model), the user interface (template), and the control logic (view) into three distinct components.
+
+model - the data you want to store in the database
+view - the logic that handles the request and returns a response
+template - the HTML file that defines the structure of the webpage
+
+##########Model
+
+#In django the data is delivered as a Object Relational Mapper (ORM) which is a way to interact with the database using python code instead of writing raw SQL queries. It allows you to define your data models as python classes and then automatically generates the database schema and provides an API to interact with the database.
+
+example of model in django:
+
+from django.db import models
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    author = models.CharField(max_length=100)
+    published_date = models.DateField()
+
+    #inserting data into the database
+    book = Book(title="The Great Gatsby", author="F. Scott Fitzgerald", published_date="1925-04-10")
+    book.save()
+
+#It will create a table in the database with the name of the class and the fields as columns and it will insert the data into the table.
+#Due to these ORM we can easily interact with the database without writing raw SQL queries and it will also help us to avoid SQL injection attacks.
+
+
+##########VIEW
+
+A view is a function or method that takes a web request and returns a web response. It is responsible for handling the logic of the application and interacting with the model to retrieve or manipulate data.
+
+The views are located in a file called views.py in the app directory. A view can be a function-based view or a class-based view.
+
+##########TEMPLATE
+
+A template is an HTML file that defines the structure of the webpage. It is responsible for rendering the data passed from the view into a format that can be displayed in the browser.
+The templates are located in a directory called templates in the app directory. A template can use template tags to display data and control the flow of the template.
+
+#########URLS
+
+In django the urls are defined in a file called urls.py in the app directory. It is responsible for mapping the URLs to the views. It uses regular expressions to match the URLs and then calls the corresponding view.
+
+example of urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('books/', views.book_list, name='book_list'),
+    path('books/<int:id>/', views.book_detail, name='book_detail'),
+]
+
+#######
+So what is the process going on means
+When you have installed Django and created your first Django web application, and the browser requests the URL, this is basically what happens:
+
+Django receives the URL, checks the urls.py file, and calls the view that matches the URL.
+The view, located in views.py, checks for relevant models.
+The models are imported from the models.py file.
+The view then sends the data to a specified template in the template folder.
+The template contains HTML and Django tags, and with the data it returns finished HTML content back to the browser.
+
+
+################################
+
+To run django we need python and to check the version
+python --version
+
+TO install django you need pip and to check the version
+pip --version
+
+####################VENV(VIRTUAL ENVIRONMENT) IN PYTHON####################
+A virtual environment is a self-contained directory that contains a Python installation for a particular version of Python, plus a number of additional packages. It allows you to manage dependencies for different projects separately, ensuring that each project has its own set of packages and versions, which can help avoid conflicts between projects.
+
+how to create a virtual environment in python:
+
+python3 -m venv myenv
+
+how to activate the virtual environment:
+source myenv/bin/activate
+
+how to deactivate the virtual environment:
+deactivate
+
+#######################################################
+TO install django in virtual environment
+
+python -m pip install django
+
+
+
+To check the version of django
+
+
+django-admin --version
+
+
+
+#########Creating project
+
+django-admin startproject project-name
+
+
+django will create the folder structure for the project and it will also create a manage.py file which is used to run the server and perform other tasks related to the project.
+
+folder-structure:
+project-name/
+    manage.py
+    project-name/
+        __init__.py
+        settings.py
+        urls.py
+        wsgi.py
+        asgi.py
+
+In urls.py file we need to define the urls for our project and in settings.py file we need to configure the database and other settings for our project.
+In settings.py file we need to add our app name in the INSTALLED_APPS list to tell django that we are using this app in our project.
+In wsgi.py file we need to configure the wsgi server for our project and in asgi.py file we need to configure the asgi server for our project.
+In asgi.py file we need to configure the asgi server for our project and in wsgi.py file we need to configure the wsgi server for our project.
+
+######for running the project
+
+python manage.py runserver
+
+
+
+DJANGO APP#######
+
+In django an app is a web application that does something. It is a component of a project that can be reused in different projects.It   is the main building block of a Django project. An app can be created using the command:
+
+example::
+If Django project is a whole company in that app is like different departments 
+
+
+if I am creating django project for shopping
+in that men is an one app and women is another app.
+
+command 
+
+
+
+python manage.py startapp appname.py
+
+
+then automatically django will create folders in that one
+migrations/
+admin.py
+apps.py
+models.py
+tests.py
+views.py
+
+
+
+VIEW  ##########
+
+django views are python functions that take http requests and return http responses like HTML documents.
+
+A webpage that uses django is full of views with different tasks and missions.
+
+views are usually put in a folder like vews.py
+
+views.py
+
+from django.shortcuts import render
+from django.http import HttpResponse
+
+def members(request):
+    return HttpResponse("Hello")
+
+
+URLS ##################
+
+create urls.py folder in the same path of views.py folder.
+
+from django.urls import path
+from . import views
+
+url_patterns = [
+    path('members/', views.members, name='members'),
+]
+
+so when we hit the url http://0.0.0.0:8000/members/ it will call the members view and it will return the response "Hello" in the browser.
+
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('appname/', include('appname.urls')),
+]
+
+for above code when we hit the url http://0.0.0.0:8000/appname/members/ it will call the members view and it will return the response "Hello" in the browser.
+
+path('admin/', admin.site.urls), -- what it will do is it will create a admin panel for our project and we can access it by hitting the url http://0.0.0.0:8000/admin/
+
+what we can do in admin panel is we can add, delete, update the data in the database and we can also create superuser to access the admin panel.
+
+
+Summary Table
+Import  Type    Meaning
+from .models import Student Relative import Import from current app/package
+from models import Student  Absolute/direct import  Search globally for models module
+
+
+
+####projects#####
+1. Student Management System (Intermediate Upgrade)
+
+You already started this one.
+
+Features
+Add students
+Update student details
+Delete students
+Search students
+Student profile page
+Pagination
+Login for admin
+Concepts You Learn
+CRUD operations
+Forms
+ModelForms
+Class Based Views
+Authentication
+Bootstrap integration
+Difficulty
+
+⭐ Beginner → Intermediate
+
+2. Todo App with Authentication
+Features
+Register/Login
+Create tasks
+Mark complete
+Deadlines
+Categories
+User-specific tasks
+
+Concepts
+User authentication
+ForeignKey relationships
+Sessions
+Decorators
+Django messages framework
+Difficulty
+
+⭐ Intermediate
+
+3. Blog Website
+Features
+Create posts
+Rich text editor
+Comments
+Categories
+Tags
+Like system
+User profiles
+Concepts
+Slugs
+CKEditor
+Relationships
+Signals
+Generic views
+SEO basics
+Difficulty
+
+⭐⭐ Intermediate
+
+4. E-Commerce Website
+Features
+Products
+Cart
+Orders
+Checkout
+Payment integration
+Admin dashboard
+Concepts
+Complex models
+Sessions
+Stripe/Razorpay
+Context processors
+Order workflows
+Difficulty
+
+⭐⭐⭐ Intermediate+
+
+5. Library Management System
+Features
+Books
+Authors
+Borrow/return
+Fine calculation
+Admin reports
+Concepts
+Date handling
+Relationships
+Admin customization
+Query optimization
+Difficulty
+
+⭐⭐ Intermediate
+
+6. Expense Tracker
+Features
+Add expenses
+Monthly reports
+Charts
+CSV export
+Budget tracking
+Concepts
+Aggregation queries
+Charts
+Filtering
+File export
+Difficulty
+
+⭐⭐ Intermediate
+
+7. Chat Application
+Features
+Real-time messaging
+Online users
+Rooms/groups
+Notifications
+Concepts
+Django Channels
+WebSockets
+Async Django
+Difficulty
+
+⭐⭐⭐⭐ Advanced Intermediate
+
+8. Job Portal
+Features
+Recruiters
+Job seekers
+Resume upload
+Applications
+Filters/search
+Concepts
+File uploads
+Permissions
+Advanced querying
+Pagination
+Difficulty
+
+⭐⭐⭐ Intermediate+
+
+9. Learning Management System (LMS)
+Features
+Courses
+Videos
+Enrollments
+Quizzes
+Certificates
+Concepts
+ManyToMany relations
+User roles
+Progress tracking
+Difficulty
+
+⭐⭐⭐⭐ Advanced
+
+10. Social Media Clone
+Features
+Posts
+Followers
+Likes
+Comments
+Realtime notifications
+Concepts
+Complex relationships
+AJAX/Fetch API
+APIs
+Scaling concepts
+Difficulty
+
+⭐⭐⭐⭐ Advanced
+
+
+#pagination means splitting data into multiple pages because if we have more data(like 10k+) to load into interface it will take sometime and it will  give bad interface.
+
+
+Best workflow for Django is
+Order   File
+1   models.py
+2   migrations
+3   urls.py
+4   views.py
+5   templates
+6   forms.py
+7   authentication
+8   styling
+9   optimization
+
+
+
+
+
+
+
+################################################Working with csv files and pandas library######################################################
+csv-comma seperated values
+
+##sample  script how to read from csv file and print
+import csv
+
+with open("/home/ajay/Downloads/projects/python/important_python/csv/weather_data.csv") as data_file:
+    data=csv.reader(data_file)
+    header = next(data)  # Skip header row ['day', 'temp', 'condition']
+    temp=[]
+    for row in data:
+        temp.append(int(row[1]))
+    print(temp)
+#####some example pandas scripts
+
+# import csv
+
+# with open("/home/ajay/Downloads/projects/python/important_python/csv/weather_data.csv") as data_file:
+#     data=csv.reader(data_file)
+#     header = next(data)  # Skip header row ['day', 'temp', 'condition']
+#     temp=[]
+#     for row in data:
+#         temp.append(int(row[1]))
+#     print(temp)
+
+
+import pandas as pd
+
+# data=pd.read_csv("/home/ajay/Downloads/projects/python/important_python/csv/weather_data.csv")
+
+# print(data)
+# print("#################")
+# print(data["temp"])  # printing one particular column
+# #converting data to dictionary
+# data_dict=data.to_dict()
+# print(data_dict)
+# temp_list=data["temp"].to_list()
+# print(temp_list)
+# sum=0
+# for i in temp_list:
+#     sum+=i
+
+# print(f"Average of temperatures is {sum/len(temp_list)}")
+# #to find avg is another way is present
+# print(data["temp"].mean())
+# print(data["temp"].max())# To find max number in a particular column
+
+# #data["temp"]  is equal to data.temp both are same
+# print("Getting data into rows")
+# print(data[data.day=='monday'])
+# print("Getting row data of max temperature")
+# print(data[data.temp==data["temp"].max()]["temp"])
+
+#crete a dataframe from scratch
+data_dict={ "students" :["Amy","James","Angela"],"scores":[76,56,65]}
+data=pd.DataFrame(data_dict)
+data.to_csv("/home/ajay/Downloads/projects/python/important_python/csv/script_data.csv")
+
+
+
+#######################################################HANDLINGLIST################################################################################
+
+numbers=[1,2,3,4,5,6]
+squared_numbers=[n**2 for n in numbers]
+squared_numbers=[1,4,9,16,25,36]
+
+string_integers=['1','2','3','4','5']
+numbers=[int(n) for n in string_integers]
+even_numbers=[n for n in numbers if n%2==0]
+odd_numbers=[n for n in numbers if n%2!=0]
+
+
+with open("file1.txt") as file1:
+    file1_numbers=file1.readlines()
+with open("file1.txt") as file1:
+    file1_numbers=file1.readlines()
+   
+file1_list=[int(num.strip()) for num in file1_numbers]
+file2_list=[int(num.strip()) for num in file2_numbers]
+result= [num for num in file1_list if num in file2_list]
+
+
+########################################################################################################################################################
+for generating random integer
+
+
+import random
+new_number=random.randint(1,100)
+
+##########################################################DICTIONARY##################################################################################
+names=['aaaaa','bbbbbbbbbbb','cccccccccccccc','ddddddddddddddddddddddddd']
+names_dict={name:len(name) for name in names}
+print(names_dict)
+passed_dict={name:score for (name,score) in names_dict.items() if score>10}
+print(passed_dict)
+
+
+
+
+sentence = "What is the Airspeed Velocity of an Unladen Swallow?"
+result = {i:len(i) for i in sentence.split(" ")}
+
+weather_c = {"Monday": 12, "Tuesday": 14, "Wednesday": 15, "Thursday": 14, "Friday": 21, "Saturday": 22, "Sunday": 24}
+
+weather_f = {i:(weather_c[i]*9)/5+32 for i in weather_c}
+
+print(weather_f)
+
+
+
+******When looping through dictionaries
+
+for (key,value) in dict_name.items():
+     print(f"key:{key}")
+     print(f"value:{value}")
+
+
+
+###################################################################################################################################
+                                LIST Elements deletion
+
+
+1. Removing by value
+    
+   numbers=[1,2,3,4]
+   numbers.remove(2)  ##only first occurence will remove
+   print(numbers)  :::1,3,4
+
+2. Removing by index(del or pop)
+
+   numbers=[10,20,30,40]
+   del numbers[1]
+   print(numbers)   #10,30,40
+
+   removed=numbers.pop(1)
+   print(removed)  #30
+   print(numbers)  #10,40
+
+3. clearing the entire list
+  
+   numbers=[10,20,30,40]
+   numbers.clear()
+   print(numbers)
+
+################################################################PROBLEMNO 27#######################################################################
+leetcode problem no 27:::
+
+removing the elements 
+
+first sol:
+
+for i in nums:
+    if i==val:
+        nums.remove(i)
+
+but it will not work why means while removing nums one number is removing one step elements will move left onwards at that time one element is missing.
+
+correct soln is :
+
+nums[:]=[i for i in nums if i!=val]
+EXPLANATION::
+The [:] is called slice assignment.
+
+It means replace the contents of the original list nums in-place instead of creating a new list.
+
+Without [:], if you did nums = [...], it would create a new list and assign it to the variable, leaving other references to nums unchanged.
+
+###########################################################################################################################################################
+
+
+for finding minimum and maximum in an array:::
+ min_left = min(w["x"] for w in line)
+
+finding substring in string based on indices:::
+text = "Hello, world!"
+# Extract "Hello"
+substring = text[0:5]
+substring = text[0:5:2]
+
+
+
+##########################################################################################################################################
+                                                  APPLICATION PROGRAMMING INTERFACES(API)
+
+            
+An api is a set of rules and methods that allows software application to communicate with another software application.
+API is a middleman that lets two systems talk to each other.
+
+For calling api
+
+import requests
+response=requests.get(url="")
+print(response)
+
+Api response codes:::Api response codes are numbers sent by the server to indicate the result of a clients request.
+
+response codes and their meanning::
+
+1XX::: Hold on
+2XX::: success
+3xx::: Redirection(when you asked somethiing that service is present but somewhere it is present)
+4XX::: client error responses (ike bad req,error while processing)
+5xx::: Server error responses (like Internal server error)
+
+print(response.status_code)   ###for status code
+data=response.json()  ###This is the actual data and it is in dictionary format
+
+
+
+
+
+
+##########################For handling special characters in python#############################
+
+str.casefold()==str1.casefold() it will convert the special characters and unicode characters
+ex:::
+"Aß".lower()     # output: 'aß'
+"Aß".casefold()  # output: 'ass'
+
+
+
+
+#############################SORTING THE LIST IN ASCENDING AND DESCENDING ORDER#######################################
+
+nums = [5, 2, 9, 1, 3]
+nums.sort() #It will print the list in ascending order
+print(nums)  #output::[1, 2, 3, 5, 9]
+nums.sort(reverse=True) #It will print the list in descending order
+print(nums)  #output:[9, 5, 3, 2, 1]
+
+###########################################CREATING COPY OF LIST IN PYTHON##########################################################################
+nums = [5, 2, 4]
+asc_list = nums
+
+if i give like this juts it will create two variables but points to same adress. If u do change in one variable that will reflects in another variable
+
+asc_list.sort()  # sorts the list in-place
+print("asc_list:", asc_list)  # [2, 4, 5]
+print("nums:", nums)          # [2, 4, 5] <-- nums also changed
+
+
+##correct way to make a seperate list is::
+asc_list = nums.copy()  # creates a new list
+
+It will create a new seperate list
+###############################################################################################################################################
+
+for reversing the string in python instead of doing like
+
+def reverse(self, word: str) -> str:
+    ans=""
+    for i in range(len(word)-1,-1,-1):
+        ans=ans+word[i]
+    return ans
+
+
+we can do in single line:::
+word[::-1]---it will return the reverse of string
+
+
+for forming a statement using the words list using for loop instead of that in python we can do in a single line:::
+ans=" ".join(input_words)
+
+
+
+###############################################################################################################################################
+
+def fun_name(x,y,z):
+    return x+y+z
+
+fun_name(x,y,z) ---- In this order is important.
+fun_name(x=10,z=30,y=20) ----- In this case order is not important
+#############################################################################################################################################
+
+
+
+
+###########################################################LINKED LIST#############################################################################
+
+Array or list will store elements in continous memory allocations but linked list will stores an elements in random memory locations and stores the next element memory locations.
+
+Each element in a linked list contains two nodes one contains data and other node contains memory location of next element.
+
+TYPES OF LINKED LIST:::
+1. SINGLE LINKED LIST
+2. DOUBLE LINKED LIST ---In Double linked list each node has the links to front element and back element.
+3. CIRCULAR LINKED LIST --- In circular linked list first node and last nodes are connected.
+
+starting node is called as head node and last node is called as tail node
+
+
+advantages and disadvantages::
+
+*compare to array linked list size we can increase because arrays are fixed size.
+*Insertion for linked list is O(1) but array is O(n)
+*For accessing in linked list is O(n) but in array is O(1) if array we access through index.
+*for linked list we need extra space for pointers
+*It will efficient for dynamic data.
+
+
+
+
+####################################################Unpacking dictionary in python #########################################################
+
+**dictionary :: It will unpack the dictionary and make as key=value.
+
+db_config = {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "secret"
+}
+
+here db config is a dictionary
+
+for connecting to db
+
+def connect_db(host, port, user, password):
+    print(host, port, user, password)
+
+
+Now i need to call db in two ways with using ** and without using **
+
+1.with using **:
+
+connect_db(**db_config)
+
+1.without **:
+
+connect_db(db_config['host'],db_config['port'],db_config['user'],db_config['password'])
+
+
+
+#################################################################################################################################################
+
+##########################################################MULTITHREADING IN PYTHON######################################################################
+
+what is process and thread?
+*Process is an instance of a program that is being executed. It has its own memory space and resources. It is an independent entity that can run concurrently with other processes.
+ It is running independently and it is not affected by other processes. It is a heavy weight process because it requires more resources and time to create and manage.
+*Thread is a smaller unit of a process that can run concurrently with other threads within the same process. It shares the same memory space and resources as the parent process.
+
+
+##WAITING for I/O requirements so it will increase execution time of program but if we use multithreading it will not wait for I/O requirements and it will execute other threads while waiting for I/O requirements.
+what are the I/O requirements?
+*I/O requirements are the operations that require input/output operations such as reading/writing files, making network requests, etc. These operations can take time to complete and can block the execution of the program. Multithreading allows the program to continue executing other threads while waiting for these I/O operations to complete, improving overall performance and responsiveness.
+
+for multithreading in python
+1.we need to know when we need to use multithreading
+2.I/O requirements :Tasks that spend more time waiting for I/O operations than performing computations are good candidates for multithreading. Examples include file handling, network requests, and database operations.
+3.concurrent execution: If you have multiple tasks that can run concurrently and do not depend on each other, multithreading can help improve performance by allowing them to execute simultaneously.
+
+
+Examples of multithreading and Multiprocessing in python
+
+Multithreading means If we have multiple threads if in one thread is waiting for I/O requirements then other thread will execute and it will not wait for I/O requirements.
+Multiprocessing means each process will run independently and it will not affect other processes. It is a heavy weight process because it requires more resources and time to create and manage.
+
+
+
+# import threading
+# import time
+
+# def print_numbers():
+#     for i in range(1, 6):
+#         print(f"Number::{i}")
+
+# def print_letters():
+#     for letter in ['A', 'B', 'C', 'D', 'E']:
+#         print(f"Letter::{letter}")
+
+
+# #create two threads for the functions
+# thread1 = threading.Thread(target=print_numbers)
+# thread2 = threading.Thread(target=print_letters)
+# start=time.time()
+# #start the threads
+
+# thread1.start()
+# thread2.start()
+
+# #wait for both threads to complete
+# thread1.join()
+# thread2.join()
+
+# print(f"Time taken with threading: {time.time() - start}")
+
+
+###########################Multiprocessing Example###########################
+#processes that will run in parallel is called multiprocessing. It is used to run multiple processes simultaneously, which can take advantage of multiple CPU cores and improve performance for CPU-bound tasks.
+#parallel execution of processes can be achieved using the multiprocessing module in Python. This module provides a way to create and manage separate processes, allowing for concurrent execution of tasks.
+
+# import multiprocessing
+# import time
+
+# def square_numbers():
+#     for i in range(1, 6):
+#         print(f"Square::{i**2}")
+# def cube_numbers():
+#     for i in range(1, 6):
+#         print(f"Cube::{i**3}")
+# # Create two processes for the functions
+# process1 = multiprocessing.Process(target=square_numbers)
+# process2 = multiprocessing.Process(target=cube_numbers)
+# start = time.time()
+# # Start the processes
+# process1.start()
+# process2.start()
+# # Wait for both processes to complete
+# process1.join()
+# process2.join()
+# print(f"Time taken with multiprocessing: {time.time() - start}")
+
+
+
+    ####################################################################THREADPOOL EXAMPLE####################################################################
+#ThreadPool is a higher-level abstraction for managing a pool of worker threads. It allows you to easily execute tasks concurrently without having to manage the threads yourself. The ThreadPool class is part of the concurrent.futures module in Python. It provides a simple interface for submitting tasks to a pool of threads and retrieving their results. 
+#For example one function is there I have a list of numbers to implement that function for each number in the list Instead of creating a separate thread for each number, I can use a ThreadPool to manage a fixed number of worker threads that will execute the function concurrently for each number in the list.
+
+#Ex::
+
+# from concurrent.futures import ThreadPoolExecutor
+# import time
+
+# def square_number(n):
+#     #time.sleep(1)  # Simulate a time-consuming task
+#     print(f"Square of {n} is {n**2}")
+#     return n ** 2
+
+# numbers = [1, 2, 3, 4, 5]
+# start = time.time()
+# with ThreadPoolExecutor(max_workers=5) as executor:
+#     results=list(executor.map(square_number, numbers))
+
+# print(f"Squared numbers: {results}")
+# print(f"Time taken with ThreadPoolExecutor: {time.time() - start}")
+
+
+#################################################################################PROCESSPOOL EXAMPLE####################################################################
+#ProcessPool is a higher-level abstraction for managing a pool of worker processes. It allows you to easily execute tasks concurrently across multiple processes, which can take advantage of multiple CPU cores and improve performance for CPU-bound tasks. The ProcessPool class is part of the concurrent.futures module in Python. It provides a simple interface for submitting tasks to a pool of processes and retrieving their results. 
+#For example, if you have a function that performs a CPU-intensive calculation and you want to execute it concurrently for a list of inputs, you can use a ProcessPool to manage a fixed number of worker processes that will execute the function concurrently for each input in the list.
+
+from concurrent.futures import ProcessPoolExecutor
+import time
+
+def cpu_intensive_task(n):
+    # Simulate a CPU-intensive task
+    result = 0
+    for i in range(1, n + 1):
+        result += i ** 2
+    print(f"Sum of squares up to {n} is {result}")
+    return result
+#give list with 100 large numbers to process
+numbers = [1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000,
+           11000000, 12000000, 13000000, 14000000, 15000000, 16000000, 17000000, 18000000, 19000000, 20000000]
+start = time.time()
+with ProcessPoolExecutor(max_workers=2) as executor:
+    results = list(executor.map(cpu_intensive_task, numbers))
+print(f"Results: {results}")
+print(f"Time taken with ProcessPoolExecutor: {time.time() - start}")
+
+
+
+
+
+
+
+#########################################################################STACK#############################################################
+
+A Stack is a linear data structure that follows (LIFO) ---- Last In First Output
+
+Push -- Add element
+Pop  -- Removes top elements
+Peek/top -- view top element
+isEmpty -- checking whether stack is empty or not
+size -- number of elements
+
+
+
+python stacks using modules### Bettter for larger sets of data
+from collections import deque
+stack=dequeue()
+stack.append(1)
+stack.append(2)
+stack.append(3)
+print(stack.pop())
+
+
+############Stack using Custom class##########################
+class Stack:
+    def __init__(self):
+        self.items=[]
+    def push(self,item):
+        self.items.append(item)
+    def pop(self):
+        if not self.is_empty():
+            return self.items.pop()
+        else:
+            return None
+    def peak(self):
+        return self.items[-1] if not self.is_empty() else return Non
+    
+    def is_empty(self):
+        return len(self.items)==0
+    
+
+s=stack()
+s.push(20)
+s.push(10)
+
+
+
+#####################################################################################################################
+02022026####################################################################################
+
+
+To list the directories in particular directory based on their size
+
+du -sh * | sort -h
+
+#if you need to list in descending order
+
+du -sh * | sort -hr
+
+
+
+
+################################################## VIRTUAL ENVIRONMENT##################################################
+
+For enabling the venv
+
+
+cd target_directory
+
+python3 -m venv venv ---> It will create folder in that directory
+
+source venv/bin/activate ---> for activate
+
+deactivate --> for deactivating 
+
+
+
+###########################################################################################################
+
+
+#######################################################Service File##############################################################
+[Unit]
+Description=File Validation FastAPI Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+WorkingDirectory=/data/icp_snl/scripts/validate_api/
+Environment="PATH=/data/icp_snl/scripts/validate_api/venv/bin"
+Environment="PYTHONUNBUFFERED=1"
+
+ExecStart=/data/icp_snl/scripts/validate_api/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker -w 1 -b 0.0.0.0:5000 main:app
+
+
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+To run the service without venv
+
+
+[Unit]
+Description=File Validation FastAPI Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+WorkingDirectory=/data/icp_snl/scripts/validate_api/
+
+Environment="PYTHONUNBUFFERED=1"
+
+ExecStart=/usr/bin/gunicorn \
+    -k uvicorn.workers.UvicornWorker \
+    -w 1 \
+    -b 0.0.0.0:5000 \
+    main:app
+
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+
+##############terms#############
+After=network.target -- It means that this service will start after the network is up and running.
+Type=simple -- It means that the service will be considered started immediately after the ExecStart command is executed.
+ExecStart command is used to specify the command that will be executed to start the service. In this case, it is starting a Gunicorn server with Uvicorn workers to run a FastAPI application.
+example of ExecStart command:
+ExecStart=/data/icp_snl/scripts/validate_api/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker -w 1 -b 0.0.0.0:5000 main:app
+
+Restart=always -- It means that the service will be automatically restarted if it crashes or stops unexpectedly
+RestartSec=3 -- It means that the system will wait for 3 seconds before attempting to restart the service after it has stopped.
+TimeoutStopSec=30 -- It means that the system will wait for up to 30 seconds for the service to stop gracefully before forcefully killing it if it does not stop within that time frame
+wantedBy=multi-user.target -- It means that the service will be started during the boot process when the system reaches the multi-user target, which is a common target for normal system operation.
+Group=root -- It means that the service will run with the permissions of the root group, which typically has elevated privileges on the system. This allows the service to perform actions that may require administrative access.
+Environment="PATH=/data/icp_snl/scripts/validate_api/venv/bin" -- It sets the PATH environment variable for the service, ensuring that it uses the Python interpreter and any dependencies from the specified virtual environment.
+Environment="PYTHONUNBUFFERED=1" -- It sets the PYTHONUNBUFFERED environment variable to 1, which means that the output from the Python application will be unbuffered, allowing for real-time logging and output without delays caused by buffering.
+if it set to 0 then it will buffer the output and it will not print the output until the buffer is full or the program ends, which can lead to delays in seeing log messages or other output from the application.
+###################################################################################################################################
+
+
+
+
+##############################################################PANDAS####################################################################
+
+print(df.isnull().sum())  # It will give the count of null values in each column
+print(df.dropna())  # It will drop the rows with null values
+print(df.fillna(0))  # It will fill the null values with 0
+print(df.fillna(method='ffill'))  # It will fill the null values with the previous value in the column
+print(df.fillna(method='bfill'))  # It will fill the null values with the next value in the column
+print(df.fillna(df.mean()))  # It will fill the null values with the mean of the column
+print(df.fillna(df.median()))  # It will fill the null values with the median of the column
+print(df.fillna(df.mode().iloc[0]))  # It will fill the null values with the mode of the column
+
+
+
+
+
+Correct Data Cleaning Strategy
+Column  Type    Solution
+Age Numeric Fill with median
+Gender  Categorical Fill with most frequent
+Education Level Ordinal Fill with most frequent
+Years of Experience Numeric Fill with median
+Salary  Target  Drop rows
+
+
+
+##########################################################
+Use openpyxl → when you want to read/write/edit Excel files (formatting, cells, styles, formulas)
+Use pandas → when you want to analyze data (filter, clean, aggregate, ML prep)
+
+
+#########################################################   
+
+
+###########################################################CHUNKS#########################################################
+
+When you are working related to text for training the model then it is better to divide that text to chunks because ai can't able to read all words at a time.
+
+Imagine your PDF has 1000 words. AI models cannot read 1000 words at once — they have a limit of around 200-400 words at a time
+
+By default chunk size is 200 words.
+
+
+def chunk_text(text, chunk_size=200, overlap=50):
+    words  = text.split()
+    chunks = []
+    i = 0
+    while i < len(words):
+        chunk = " ".join(words[i:i + chunk_size])
+        chunks.append(chunk)
+        i += chunk_size - overlap
+    return chunks
+
+
+
+
+################################################################################################################################
+
+import pickle
+saves Python objects (like lists, dictionaries) to a file so we can reload them later.
+
+################################################################################################################################
+
+🟢 Level 1 — Absolute Beginner (Tabular Data + Basic ML)
+1. 🚢 Titanic — Survival Prediction
+
+Type: Binary Classification
+What you learn: EDA, feature engineering, Logistic Regression, Random Forest
+Why start here: Hundreds of beginner notebooks available to learn from
+🔗 kaggle.com/c/titanic
+
+2. 🏠 House Price Prediction (Ames Housing)
+
+Type: Regression
+What you learn: Feature engineering, handling missing data, XGBoost, RMSE
+Why: Classic regression problem, very well documented
+🔗 kaggle.com/c/house-prices-advanced-regression-techniques
+
+3. 🔢 Digit Recognizer (MNIST)
+
+Type: Multi-class Classification
+What you learn: Your first neural network / CNN, image data basics
+Why: Bridges tabular ML → deep learning
+🔗 kaggle.com/c/digit-recognizer
+
+
+🔵 Level 2 — Beginner–Intermediate (Real-world Problems)
+4. 🏦 Bank Customer Churn Prediction
+
+Type: Binary Classification
+What you learn: ROC-AUC metric, class imbalance, feature importance
+Why: Directly relevant — same evaluation metric as the Pantanal competition!
+🔗 Search "Binary Classification with a Bank Churn Dataset" on Kaggle
+
+5. 🔥 Predict Calorie Expenditure
+
+Type: Regression
+What you learn: RMSLE metric, physiological feature patterns, gradient boosting
+Why: Clean tabular data, great for building confidence
+🔗 Search "Predict Calorie Expenditure" on Kaggle Playground
+
+6. 🌲 Forest Cover Type Prediction
+
+Type: Multi-class Classification
+What you learn: Multi-class metrics, feature scaling, ensemble models
+Why: Ecological/environmental domain — relevant to conservation ML
+🔗 kaggle.com/c/forest-cover-type-prediction
+
+
+🟡 Level 3 — Intermediate (Images + NLP)
+7. 🌸 Flower Image Classification
+
+Type: Image Classification (CNN)
+What you learn: Transfer learning with EfficientNet/ResNet, image augmentation
+Why: Direct stepping stone to spectrogram-based audio classification
+🔗 Search "Flower Classification" on Kaggle
+
+8. 🐶 Dog Breed Identification
+
+Type: Fine-grained Image Classification
+What you learn: Pretrained models, multi-class softmax, Stanford Dogs dataset
+Why: Teaches fine-grained category distinction — same challenge as species ID
+🔗 kaggle.com/c/dog-breed-identification
+
+9. 💬 NLP — Disaster Tweet Classification
+
+Type: Binary Text Classification
+What you learn: Text preprocessing, TF-IDF, BERT fine-tuning basics
+Why: Introduces transformer models in a beginner-friendly way
+🔗 kaggle.com/c/nlp-getting-started
+
+
+🟠 Level 4 — Advanced (Directly Relevant to Pantanal)
+10. 🐦 BirdCLEF 2024 (Most Important!)
+
+Type: Multi-label Audio Classification
+What you learn: Mel-spectrograms, PANNs, EfficientNet on audio, ROC-AUC
+Why: This is essentially the same competition as Pantanal — bird sound detection in the wild
+🔗 kaggle.com/c/birdclef-2024
+
+11. 🏪 Store Sales — Time Series Forecasting
+
+Type: Time Series Regression
+What you learn: Temporal patterns, feature engineering for time, ensembling
+🔗 kaggle.com/c/store-sales-time-series-forecasting
+
+
+📋 Recommended Order at a Glance
+Titanic → House Prices → Digit Recognizer
+    → Bank Churn → Calorie Prediction
+        → Flower Classification → Dog Breeds
+            → BirdCLEF 2024  ← gateway to Pantanal!
+
+
+########################################################################ML######################################################################
+Great question! This is a very practical and important concept in ML. Let me explain clearly.
+
+Why Do People Get Different Accuracies with the Same Algorithm?
+The algorithm/formula is just a tool — like a kitchen knife. The same knife in different hands produces very different results depending on skill and ingredients.
+
+The Real Differentiators
+1. 📊 Data Quality & Quantity
+This is the #1 factor. Same algorithm, different data = completely different results.
+Person A → 1000 clean, well-labeled samples    → 95% accuracy
+Person B → 1000 noisy, mislabeled samples      → 72% accuracy
+What makes data better:
+
+More samples
+Better labeling
+Less noise and duplicates
+Balanced classes (no skew)
+Relevant features
+
+
+2. 🧹 Feature Engineering
+How you represent your data matters more than the model itself.
+Raw data:  "Date of Birth = 1990-05-10"
+
+Person A uses it as-is         → model struggles
+Person B extracts Age = 34     → model performs better
+Person B also adds "is_adult"  → even better
+Good feature engineering can make a simple model beat a complex one.
+
+3. ⚙️ Hyperparameter Tuning
+Same algorithm, different settings = different results.
+python# Random Forest — same algorithm, different hyperparameters
+
+Person A:  n_estimators=10,  max_depth=3   → 78% accuracy
+Person B:  n_estimators=200, max_depth=15  → 91% accuracy
+```
+
+Tuning methods:
+- Grid Search
+- Random Search
+- Bayesian Optimization
+
+---
+
+### 4. 🧼 Data Preprocessing
+How you **clean and prepare** data changes everything.
+
+| Step | Done Poorly | Done Well |
+|---|---|---|
+| Missing values | Drop all rows | Smart imputation |
+| Scaling | Not scaled | Normalized/Standardized |
+| Outliers | Kept as-is | Detected and handled |
+| Encoding | Wrong encoding | Proper label/one-hot |
+
+---
+
+### 5. 🏗️ Model Architecture Choices
+Even within the same algorithm family, design choices differ.
+```
+Both use Neural Networks, but:
+
+Person A → 2 layers, ReLU, no dropout         → overfits
+Person B → 5 layers, ReLU, dropout=0.3, BN    → generalizes well
+```
+
+---
+
+### 6. 🔁 Training Strategy
+```
+Person A → Train once, no validation           → overfits
+Person B → Cross-validation + early stopping  → robust model
+```
+
+Techniques that matter:
+- K-Fold Cross Validation
+- Early Stopping
+- Learning Rate Scheduling
+- Regularization (L1, L2)
+
+---
+
+### 7. 🔀 Ensemble Methods
+Combine multiple models to beat any single model.
+```
+Person A → Single Decision Tree       → 82%
+Person B → 100 Trees (Random Forest)  → 93%
+Person B → Stacking 3 models          → 96%
+```
+
+---
+
+### 8. 🧠 Domain Knowledge
+Understanding **what the data means** helps make better decisions.
+```
+Medical dataset:
+
+Person A (no domain knowledge):
+→ treats all features equally
+
+Person B (knows medicine):
+→ knows "age + blood pressure + cholesterol" together
+  are far more predictive than individually
+→ creates combined risk-score feature
+→ much better model
+```
+
+---
+
+## Simple Analogy
+
+> Two chefs have the **exact same recipe** (algorithm).
+> One uses fresh, quality ingredients with skill and experience.
+> The other uses stale ingredients carelessly.
+> **Same recipe — very different dish.**
+
+---
+
+## Summary — Where the Real Competition Is
+```
+Same Algorithm
+      ↓
+┌─────────────────────────────────┐
+│  YOUR EDGE comes from:          │
+│                                 │
+│  1. Better Data                 │
+│  2. Smarter Feature Engineering │
+│  3. Hyperparameter Tuning       │
+│  4. Better Preprocessing        │
+│  5. Smart Architecture Choices  │
+│  6. Training Strategy           │
+│  7. Ensembling                  │
+│  8. Domain Knowledge            │
+└─────────────────────────────────┘
+      ↓
+Higher Accuracy than others
+
+Real World Proof
+On Kaggle competitions, hundreds of people use the same algorithms (XGBoost, Neural Networks) but the leaderboard spreads from 60% to 99% — purely based on the above factors.
+
+The formula is public knowledge — your skill in applying it is what sets you apart. That's the whole game in ML engineering.
+
+
+
+#SMARTER Feature Engineering means:
+```
+Person A → Uses raw features as-is
+Person B → Creates new features like:
+  - Age from Date of Birth
+  - Risk score from multiple health metrics
+  - Interaction terms (e.g., BMI = weight/height^2)
+```
+so we need to understand the data and create new features that can help the model learn better. for example two features are there like experience and age we need to predict Salary in this case we can create a new feature like experience/age that can help the model to learn better. This is called as feature engineering and it is one of the most important step in machine learning.
+#And also in some times we need to remove some features that are not relevant to the target variable because it can create noise in the model and it can lead to overfitting. So we need to do feature selection and feature engineering to get better results.
+
+##################################################################
+
+###Hyperparameter Tuning means:
+```Person A:  n_estimators=10,  max_depth=3   → 78% accuracy
+Person B:  n_estimators=200, max_depth=15  → 91% accuracy
+```
+Hyperparameters are the settings that you choose before training the model. They are not learned from the data, but they can have a big impact on the performance of the model. For example, in a Random Forest, the number of trees (n_estimators) and the maximum depth of the trees (max_depth) are hyperparameters. Tuning these hyperparameters can help you find the best combination for your specific dataset and improve the accuracy of your model. There are different methods for hyperparameter tuning like Grid Search, Random Search, and Bayesian Optimization. Grid Search tries all possible combinations of hyperparameters, Random Search tries random combinations, and Bayesian Optimization uses a probabilistic model to find the best hyperparameters more efficiently.
+
+#my doubt is how we will get to know how many estimators we need to use and what should be the max depth of the trees in random forest. So we will use hyperparameter tuning methods like Grid Search, Random Search, and Bayesian Optimization to find the best combination of hyperparameters for our specific dataset. We will define a range of values for each hyperparameter and then use these methods to search through the combinations and evaluate the performance of the model on a validation set. This way we can find the optimal hyperparameters that give us the best accuracy on our dataset.
+
+#########################################################################################################################################################################
+
+###Better Preprocessing means:
+```Person A → Drops all rows with missing values
+Person B → Imputes missing values with median
+```
+Data preprocessing is the step where you clean and prepare your data before feeding it into the model. This can include handling missing values, scaling features, encoding categorical variables, and more. For example, if you have missing values in your dataset, you can either drop those rows (which may lead to loss of valuable data) or you can impute those missing values using techniques like filling with the median, mean, or mode. Better preprocessing can help your model learn better and improve its performance. For instance, if you have a column with missing values, instead of dropping those rows, you can fill those missing values with the median of that column, which can help retain more data and provide a better signal for the model to learn from.
+#null values should not present in the dataset because it can create noise in the model and it can lead to overfitting. So we need to handle the null values properly by either dropping the rows with null values or by imputing the null values with some statistical measures like mean, median, mode etc.
+
+##for empty values with which values we need to replace mean, median or mode it depends on the distribution of the data. If the data is normally distributed then we can use mean to fill the null values. If the data is skewed then we can use median to fill the null values. If the data is categorical then we can use mode to fill the null values. So it depends on the type of data and its distribution to decide which method to use for filling the null values.
+
+
+example of better preprocessing:
+```python
+import pandas as pd
+from sklearn.impute import SimpleImputer
+# Sample dataset with missing values
+data = {
+    'Age': [25, 30, None, 22, 28],
+    'Salary': [50000, 60000, 55000, None, 52000]
+}
+df = pd.DataFrame(data)
+# Better preprocessing using median imputation
+imputer = SimpleImputer(strategy='median')
+df['Age'] = imputer.fit_transform(df[['Age']])
+df['Salary'] = imputer.fit_transform(df[['Salary']])
+print(df)
+```
+Output:
+```    Age   Salary
+0  25.0  50000.0
+1  30.0  60000.0
+2  27.5  55000.0
+3  22.0  54000.0
+4  28.0  52000.0
+
+```
+
+#####################################################################Feature Engineering##########################################################
+
+whenever we are doing datascience or ml or dl project our main aim is clean data. To clean the data we need to perform feature engineering.
+
+1.####MISIING VALUES
+we can handle missing values in three mechanisms
+##MCAR (Missing Completely at Random): The missingness is completely random and unrelated to any other variable in the dataset. For example, if a survey respondent accidentally skips a question, the missing data is MCAR.there is no reason or relationship between the missing data and any other variable in the dataset. In this case, the missing data can be safely ignored or imputed without introducing bias.
+##MAR (Missing at Random): The missingness is related to other observed variables in the dataset but not to the missing variable itself. For example, if older respondents are more likely to skip a question about technology usage, the missing data is MAR. In this case, the missing data can be imputed using the observed variables that are related to the missingness, such as age.
+second example of mar is if i am conducting survey men will disclose Salary and women not disclose their age so these two can miss and also it comes under mar because it is related to other observed variables in the dataset but not to the missing variable itself.
+##MNAR (Missing Not at Random): The missingness is related to the missing variable itself. For example, if people with higher incomes are less likely to disclose their salary, the missing data is MNAR. In this case, the missing data cannot be safely ignored or imputed without introducing bias, as the missingness is directly related to the variable of interest.It is dependent on another variable in the dataset. For example, if people with higher incomes are less likely to disclose their salary, the missing data is MNAR. In this case, the missing data cannot be safely ignored or imputed without introducing bias, as the missingness is directly related to the variable of interest.
+
+
+##########How to handle missing values?
+
+import seaborn as sns
+
+df=sns.load_dataset('titanic')
+print(df.head())# It will give the first five rows of the dataset
+
+print(df.isnull().sum())# It will give the count of missing values in each column
+#####################################################################Smart Architecture Choices means:
+```Person A → 2 layers, ReLU, no dropout         → overfits
+Person B → 5 layers, ReLU, dropout=0.3, BN    → generalizes well
+```
+Model architecture choices refer to the design of the neural network or machine learning model you are using. For example, in a neural network, you can choose the number of layers, the type of activation functions, whether to use dropout for regularization, and whether to use batch normalization. These choices can have a significant impact on the performance of your model. For instance, if you have a simple architecture with only 2 layers and no dropout, it may overfit the training data and perform poorly on unseen data. On the other hand, if you have a more complex architecture with 5 layers, dropout for regularization, and batch normalization, it can help the model generalize better to new data and improve its accuracy. So making smart architecture choices is crucial for building a successful machine learning model.
+
+this one we will use in which ml models::
+Smart architecture choices are particularly relevant in deep learning models, such as neural networks. When designing a neural network, you have the flexibility to choose the number of layers, the number of neurons in each layer, the activation functions, and regularization techniques like dropout and batch normalization. These choices can significantly affect the model's ability to learn from the data and generalize to new, unseen data. For example, a simple feedforward neural network with only a few layers may not capture complex patterns in the data, while a deeper network with more layers and regularization techniques can learn more intricate relationships and perform better on tasks like image recognition, natural language processing, and other complex problems. Therefore, smart architecture choices are essential for building effective deep learning models.
+
+#########################################################################################################################################################
+
+#######Training Strategy means:
+```Person A → Train once, no validation           → overfits
+Person B → Cross-validation + early stopping  → robust model
+```
+Training strategy refers to how you train your machine learning model. For example, if you simply train your model once on the training data without any validation, it may overfit the training data and perform poorly on unseen data. On the other hand, if you use techniques like cross-validation, where you split your data into multiple folds and train the model on different subsets of the data, you can get a better estimate of how well your model will perform on new data. Additionally, using early stopping, where you monitor the performance of the model on a validation set and stop training when the performance starts to degrade, can help prevent overfitting and improve the robustness of your model. So having a smart training strategy is crucial for building a model that generalizes well to new data and achieves better accuracy.
+
+####################################################################################################################################################
+
+##Ensembling means:
+```Person A → Single Decision Tree       → 82%
+Person B → 100 Trees (Random Forest)  → 93%
+Person B → Stacking 3 models          → 96%
+```
+Ensembling refers to the technique of combining multiple machine learning models to improve overall performance. For example, instead of using a single decision tree, you can use an ensemble method like Random Forest, which combines the predictions of multiple decision trees to produce a more accurate and robust model. Random Forest typically achieves better accuracy than a single decision tree because it reduces the risk of overfitting and captures more complex patterns in the data. Another ensembling technique is stacking, where you combine the predictions of multiple different models (e.g., a decision tree, a support vector machine, and a neural network) and use another model (called a meta-model) to learn how to best combine their predictions. This can often lead to even higher accuracy than using any single model alone. So ensembling is a powerful technique that can help you achieve better performance by leveraging the strengths of multiple models.
+
+
+
+
+
+#################################################################NLP#################################################################################################
+
+WORD EMBEDDINGS::
+Word embeddings are a way to represent words as dense vectors in a continuous vector space. They capture the semantic meaning of words by placing similar words closer together in the vector space. For example, in a word embedding space, the words "king" and "queen" would be close to each other, while the word "apple" would be farther away. Word embeddings are typically learned from large corpora of text using algorithms like Word2Vec, GloVe, or FastText. These embeddings can then be used as input features for various natural language processing tasks such as text classification, sentiment analysis, and machine translation. By using word embeddings, models can better understand the relationships between words and improve their performance on NLP tasks.
+
+For example, if you have a sentence like "The cat sat on the mat", you can represent each word as a vector in a high-dimensional space. The word "cat" might be represented as a vector that captures its meaning and relationships to other words. If you have another word like "dog", it would be represented as a different vector, but it might be close to the "cat" vector because they are both animals. On the other hand, a word like "car" would be farther away from "cat" and "dog" in the embedding space because it has a different meaning. This way, word embeddings allow models to understand the semantic relationships between words and improve their performance on NLP tasks.
+
+
+# word embeddings are two types:
+1.Count or Frequency-based embeddings: These embeddings are created based on the co-occurrence of words in a large corpus of text. They capture the statistical properties of words and their relationships based on how often they appear together. Examples include Word2Vec and GloVe. (TIF IDF,BOW)
+2.Deep Learning-based embeddings: These embeddings are learned using deep learning models, such as neural networks. They capture the semantic meaning of words by training on large amounts of text data. Examples include FastText and BERT.(word2vec, glove, fasttext, bert)
+
+####WORD2VEC############
+1.CBOW(continous bag of words): In this approach, the model predicts a target word based on its surrounding context words. For example, given the sentence "The cat sat on the mat", if we want to predict the word "sat", the model would take the context words "The", "cat", "on", "the", and "mat" as input and try to predict "sat". The idea is that words that appear in similar contexts will have similar embeddings.
+2.Skip-gram: In this approach, the model predicts the surrounding context words based on a target word. For example, given the same sentence "The cat sat on the mat", if we want to predict the context words for the target word "sat", the model would take "sat" as input and try to predict the context words "The", "cat", "on", "the", and "mat". The idea is that words that have similar meanings will have similar embeddings because they will appear in similar contexts.
+
+#############################################LLM######################################################
+
+LLM(Large Language Model):::It is a neural network model trained on massive amounts of data to generate and understand like human language.
+
+Deep neural networks trained on massive amounts of data.
+
+#most modern llms are rey on transformersarchitecture.
+
+The first transformer was build to translate text from english to french.
+
+transformer architecture
+
+step1:input text
+step2:preprocessing the input text(tokenisation)
+
+The preprocessing stage usually includes:
+1.text cleaning
+2.Tokenisation
+3.convert tokens to ids
+4.Add special tokens
+5.padding
+6.Attention mask.
+
+TOKENISATION::::The transformer cannot understand words directly. It first breaks into smaller words directly called TOKENS
+
+ex::I love python programming ==> ["I","love","python","programming"]
+
+TOKENS TO IDS::
+
+Model does not understand strings
+
+ADD SPECIAL TOKENS::
+
+| Token   | Purpose           |
+| ------- | ----------------- |
+| `[CLS]` | Start of sequence |
+| `[SEP]` | Separator         |
+| `<EOS>` | End of sentence   |
+| `<PAD>` | Padding           |
+
+
+To understand the text better llms will add some tokens
+
+
+
+step3:Encoder
+
+Encoder will understand the meaning of word by seeing other words in a sentence. A words will have different meanings based on sentence it will give meaning.
+
+I love python -> python will come in different meanings but based on sentence encoder will decide.
+
+Simply we can say Encoder will encode the semantic meaning of a word using token id.
+
+
+Step4:Vector Embeddings
+
+Step 5:output text
+
+step 6:Decoder
+
+step 7: processing steps
+
+step8 : Output text
+
+The main two parts of Transformer architecture is
+
+1. Encoder: Encodes input text into vectors
+2. Decoder: Generates output text from encoded vectors.
+
+
+Self Attention Mechanism::
+
+For each word look at the other words in a sentence and allows to decide the weights of each word by comparing to another words in a sentence.
+
+example::I love Python because it is easy.
+
+Word    Importance
+I   0.05
+love    0.10
+Python  0.80
+because 0.03
+easy    0.02
+
+it will give the imporatnce of each word.
+
+###Later variations of transformer architecture::
+
+1.BERT(Bidirectional encoder representations)
+2.GPT(Generative pretrained transformers)
+
+BERT can find the missing words in a sentence by analysing the entire sentence
+
+But GPT generates only one word at a time.
+
+
+
+
+
+#############################################FINE TUNING llms##########################################
+
+LORA (Low rank adaption of large language models):: 
+
+
+! — runs a shell command from inside a Jupyter notebook cell (not Python code)
+pip install — Python package installer
+-q — quiet mode, suppresses most output
+Packages being installed with pinned versions (= means exact version):
+
+accelerate=0.21.0 — Hugging Face library for running PyTorch models on different hardware (CPU/GPU/multi-GPU)
+peft=0.4.0 — Parameter Efficient Fine-Tuning, used for techniques like LoRA to fine-tune large models with less memory
+bitsandbytes=0.40.2 — enables 4-bit and 8-bit quantization to load large models using less GPU memory
+transformers=4.31.0 — Hugging Face core library for loading pretrained models like LLaMA, GPT etc.
+trl=0.4.7 — Transformer Reinforcement Learning, used for fine-tuning with RLHF and SFT (Supervised Fine-Tuning)
+
+!pip install -q accelerate=0.21.0 peft=0.4.0 bitsandbytes=0.40.2 transformers=4.31.0 trl=0.4.7
+
+
+
+
+
+
+##########################################################################################################################
+
+###############################################Feature Engineering########################################################
+
+Feature engineering:::: Taking raw data and transforming into useful inputs so machine learning models can understands and performs well.
+
+
+## Missing values::some of the information is not available for a variable. There are 3 mechanisms to handle that one.
+
+1. MCAR(Missing Completely At Random) :: 
+
+For missing the data there is no reason or pattern to miss the data. values are missing randomly in the dataset.
+
+And also the missing values not depends on variables.
+
+2. MAR(Missing at random)::
+
+Data is missing at randomly but here difference between  MAR and MCAR is In MAR missing data is dependent on variables of data.
+
+For example if you are collecting age of womens some womens are not okay to expose their age like that.
+
+
+3. MNAR(Missing Not at Random)::
+
+Data is missing at randomly but here difference between  MAR and MNAR is In MNAR missing data is dependent on the variable itself.
+
+For example if you are collecting salary of employees some employees are not okay to expose their salary like that. So in this case missing data is dependent on the variable itself.
+
+User   Age   Orders
+A      25    10
+B      NULL  5
+C      30    20
+
+
+if we are thinking in MCAR means 
+the age data is missing randomly and it is not dependent on any variable in the dataset. So we can ignore the missing values or we can impute the missing values with mean or median.
+
+
+if we are thinking in MAR means
+
+thee age data is missing because some another country people are not okay to expose their age. So in this case missing data is dependent on another variable in the dataset. So we can impute the missing values with mean or median based on the distribution of the data.
+
+
+if we are thinking in MNAR means
+
+the age data is missing because some employees are not okay to expose their salary. So in this case missing data is dependent on the variable itself. So we cannot ignore the missing values or we cannot impute the missing values with mean or median because it can create bias in the dataset. So we need to handle the missing values properly based on the mechanism of missing data.
+
+
+Seaborn library is a python data visualization library built on top of matplot lib.
+
+why seaborn instead of matplot means??
+
+with matplot lib you can create plots but for sometimes the code is longer even for some basic plots
+seaborn provides
+better looking plots by default
+Easier statical visualisations
+Integration with pandas dataframes
+
+
+import seaborn as sns -- to import the module.
+
+
+Seaborn version: 0.13.2
+In seaborn some default datasets are available to learn data analysis that are::['anagrams', 'anscombe', 'attention', 'brain_networks', 'car_crashes', 'diamonds', 'dots', 'dowjones', 'exercise', 'flights', 'fmri', 'geyser', 'glue', 'healthexp', 'iris', 'mpg', 'penguins', 'planets', 'seaice', 'taxis', 'tips', 'titanic']
+
+
+
+
+print(f"seaborn version::{sns.__version__})
+print(f"seaborn default dataset names are {sns.get_dataset_names()})
+
+
+##loading the dataset titanic for learning missing values
+df=sns.load_dataset('titanic') -it will load the dataset of titanic into df variable.
+
+#For printing the first 5 rows of data.
+print(df.head())
+
+#I need to check the dataset in each column how many missing values are present
+print(df.isnull().sum())
+
+print(df.dropna().shape) # It will delete rows if any cell have missig values basically dont prefer this bcz so much dataloss will present.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#######################################################SYSTEM DESIGN##########################################################
+
+Act as an expert Software Architect, Distributed Systems Engineer, and Backend Engineering Mentor.
+
+I want to learn System Design from scratch to advanced level through a complete tutorial. Teach me in a structured, practical, and interview-oriented way.
+
+For each topic:
+
+* Explain the concept from basics.
+* Explain why it is needed.
+* Explain how it works internally.
+* Provide real-world examples.
+* Explain advantages and disadvantages.
+* Explain common interview questions.
+* Provide diagrams in text format where applicable.
+* Give practical backend examples.
+* Provide Python-specific examples whenever possible.
+
+Cover the following topics in depth:
+
+### System Design Fundamentals
+
+* What is System Design?
+* Functional vs Non-Functional Requirements
+* Scalability
+* Availability
+* Reliability
+* Maintainability
+* Fault Tolerance
+* Latency vs Throughput
+* Horizontal vs Vertical Scaling
+* High Availability
+
+### Networking Fundamentals
+
+* OSI Model
+* TCP/IP
+* HTTP/HTTPS
+* REST APIs
+* WebSockets
+* DNS
+* CDN
+* SSL/TLS
+* Reverse Proxy
+* API Gateway
+* Load Balancer
+
+### Databases
+
+* SQL vs NoSQL
+* PostgreSQL
+* MySQL
+* MongoDB
+* Redis
+* Elasticsearch
+* ACID Properties
+* Transactions
+* Isolation Levels
+* Indexing
+* Query Optimization
+* Replication
+* Partitioning
+* Sharding
+* Database Scaling
+
+### Caching
+
+* What is Caching?
+* Redis
+* Cache Aside Pattern
+* Write Through
+* Write Back
+* Write Around
+* Cache Eviction Strategies
+* Distributed Caching
+
+### Distributed Systems
+
+* CAP Theorem
+* Consistency Models
+* Eventual Consistency
+* Consensus
+* Leader Election
+* Distributed Locks
+* Service Discovery
+* Circuit Breaker Pattern
+* Retry Mechanisms
+* Idempotency
+
+### Messaging Systems
+
+* Message Queues
+* RabbitMQ
+* Apache Kafka
+* Pub/Sub
+* Event-Driven Architecture
+* Dead Letter Queues
+* Stream Processing
+
+### Backend Architecture
+
+* Monolith
+* Modular Monolith
+* Microservices
+* Event-Driven Architecture
+* Service-Oriented Architecture
+* Clean Architecture
+* Hexagonal Architecture
+* Domain Driven Design (DDD)
+* CQRS
+* Saga Pattern
+
+### API Design
+
+* REST
+* GraphQL
+* API Versioning
+* Authentication
+* Authorization
+* OAuth
+* JWT
+* Rate Limiting
+* Pagination
+
+### Python Backend Concepts
+
+* Django Architecture
+* Django REST Framework
+* FastAPI
+* AsyncIO
+* Multithreading
+* Multiprocessing
+* Celery
+* Redis
+* RabbitMQ
+* Kafka
+* Gunicorn
+* Uvicorn
+* Nginx
+
+### Cloud and DevOps Basics
+
+* Docker
+* Kubernetes
+* CI/CD
+* AWS Fundamentals
+* Monitoring
+* Logging
+* Metrics
+* Tracing
+
+### Security
+
+* Authentication
+* Authorization
+* SQL Injection
+* XSS
+* CSRF
+* Rate Limiting
+* Encryption
+* Secure API Design
+
+### System Design Case Studies
+
+Teach how to design:
+
+* URL Shortener
+* Chat Application
+* Notification Service
+* Instagram Feed
+* WhatsApp
+* YouTube
+* Netflix
+* E-commerce Platform
+* Payment System
+* Food Delivery App
+* Ride Sharing App
+
+For every case study:
+
+* Requirements
+* Capacity Estimation
+* Database Design
+* APIs
+* High-Level Design
+* Detailed Design
+* Scaling Strategy
+* Bottlenecks
+* Trade-offs
+
+After each major topic:
+
+* Give a summary.
+* Ask me quiz questions.
+* Give practice exercises.
+* Suggest mini-projects to implement.
+* Tell me what to learn next.
+
+Teach me chapter by chapter like a complete course and do not skip any important concepts.
+
+
+
+##########
+SYSTEM DESIGN :: system design is the process of b
